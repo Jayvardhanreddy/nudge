@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>http://localhost:3000/index.html</loc></url>
+  <url><loc>http://localhost:3000/login.html</loc></url>
+  <url><loc>http://localhost:3000/privacy.html</loc></url>
+  <url><loc>http://localhost:3000/terms.html</loc></url>
+</urlset>

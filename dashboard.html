@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard - Nudge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="app-body" data-page="dashboard">
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-top">
+        <a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">x</button>
+      </div>
+      <nav class="app-nav" aria-label="Dashboard navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a>
+        <a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a>
+        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a>
+        <a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a>
+      </nav>
+      <div class="sidebar-foot">
+        <p>Instagram automation for creators.</p>
+        <a href="index.html">Back to website</a>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-header">
+        <button class="menu-button" id="sidebarOpen" aria-label="Open menu"><span></span><span></span><span></span></button>
+        <div class="app-header-copy">
+          <p class="eyebrow">Workspace</p>
+          <h1>Dashboard</h1>
+        </div>
+        <div class="profile-area">
+          <div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span></div>
+          <button class="btn btn-ghost app-logout" id="logoutButton">Log out</button>
+        </div>
+      </header>
+
+      <main class="app-content">
+        <div id="dashboardError" class="form-error"></div>
+        <section class="welcome-row">
+          <div>
+            <h2 id="welcomeHeading">Welcome back</h2>
+            <p>Here is what is happening across your workspace.</p>
+          </div>
+        </section>
+
+        <section class="overview-grid" aria-label="Account overview">
+          <div class="overview-card"><span class="overview-label">Connected Instagram Accounts</span><strong>0</strong><span class="overview-note">No accounts connected yet</span></div>
+          <div class="overview-card"><span class="overview-label">Active Automations</span><strong>0</strong><span class="overview-note">Connect an account to begin</span></div>
+          <div class="overview-card"><span class="overview-label">Messages Sent</span><strong>0</strong><span class="overview-note">No messages sent yet</span></div>
+          <div class="overview-card"><span class="overview-label">Comments Processed</span><strong>0</strong><span class="overview-note">No activity yet</span></div>
+        </section>
+
+        <section class="connect-card">
+          <div class="connect-mark">+</div>
+          <div class="connect-copy">
+            <p class="eyebrow">Get started</p>
+            <h2>Connect your Instagram account</h2>
+            <p>Connect your Instagram account to start creating comment-to-DM automations.</p>
+          </div>
+          <button class="btn btn-accent" id="connectInstagram">Connect Instagram</button>
+          <p class="coming-state" id="connectState" role="status" hidden>Instagram connection coming next. Meta OAuth will be available here soon.</p>
+        </section>
+
+        <section class="activity-card">
+          <div class="card-heading"><div><h2>Recent Activity</h2><p>Your latest automation activity will appear here.</p></div></div>
+          <div class="empty-state"><div class="empty-icon">-</div><h3>No activity yet</h3><p>Connect an Instagram account to see comments, messages, and automation events.</p></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <script src="dashboard.js"></script>
+</body>
+</html>

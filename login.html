@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Log in or Sign up | Nudge</title>
+<meta name="description" content="Log in to Nudge or create a free account for Instagram automation." />
+<link rel="canonical" href="http://localhost:3000/login.html" />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="auth-shell">
+
+  <aside class="auth-side">
+    <a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a>
+    <div class="auth-quote">
+      <p>"One Reel with a keyword trigger booked 40 calls overnight. I woke up to a full calendar."</p>
+      <span>Lena Voss · 128K followers</span>
+    </div>
+    <div class="auth-side-foot">Trusted by 2,000+ creators · Verified Meta Tech Provider</div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a>
+
+      <div class="auth-tabs" id="authTabs">
+        <button class="active" data-tab="login">Log in</button>
+        <button data-tab="signup">Create account</button>
+      </div>
+
+      <div id="formError" class="form-error"></div>
+
+      <!-- LOG IN -->
+      <form id="loginForm" class="auth-form" novalidate>
+        <h1>Welcome back</h1>
+        <p class="lede">Log in to manage your automations.</p>
+
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" name="email" placeholder="you@studio.com" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" name="password" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <div class="field-row">
+          <label class="checkbox-row"><input type="checkbox" name="remember" /> Keep me logged in</label>
+          <a href="mailto:support@nudge.app?subject=Password%20reset">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-accent btn-block">Log in</button>
+
+        <div class="divider">or continue with</div>
+        <button type="button" class="oauth-btn">Continue with Google</button>
+        <button type="button" class="oauth-btn">Continue with Instagram</button>
+
+        <p class="auth-switch">New to Nudge? <a href="login.html?tab=signup" data-switch="signup">Create a free account</a></p>
+      </form>
+
+      <!-- SIGN UP -->
+      <form id="signupForm" class="auth-form" style="display:none;" novalidate>
+        <h1>Create your account</h1>
+        <p class="lede">Free forever on your first Instagram account.</p>
+
+        <div class="field">
+          <label for="signupName">Full name</label>
+          <input type="text" id="signupName" name="name" placeholder="Mara Ellis" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" name="email" placeholder="you@studio.com" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label for="signupPassword">Password</label>
+          <input type="password" id="signupPassword" name="password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required />
+        </div>
+        <div class="field-row" style="margin-bottom:6px;">
+          <label class="checkbox-row"><input type="checkbox" name="terms" required /> I agree to the Terms & Privacy Policy</label>
+        </div>
+        <div style="height:16px;"></div>
+        <button type="submit" class="btn btn-accent btn-block">Create free account</button>
+
+        <div class="divider">or continue with</div>
+        <button type="button" class="oauth-btn">Continue with Google</button>
+        <button type="button" class="oauth-btn">Continue with Instagram</button>
+
+        <p class="auth-switch">Already have an account? <a href="login.html?tab=login" data-switch="login">Log in</a></p>
+      </form>
+
+    </div>
+  </main>
+
+</div>
+
+<script src="script.js"></script>
+<script src="analytics.js"></script>
+</body>
+</html>

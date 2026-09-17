@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard.html
+Disallow: /instagram-accounts.html
+Disallow: /automations.html
+Disallow: /messages.html
+Disallow: /analytics.html
+Disallow: /settings.html
+Sitemap: http://localhost:3000/sitemap.xml

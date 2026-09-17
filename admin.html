@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin | Nudge</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="dashboard-page">
+    <section class="dashboard-panel">
+      <a class="text-link" href="dashboard.html">Back to dashboard</a>
+      <h1>Admin data</h1>
+      <p class="muted">Private operational data. Sensitive credentials are intentionally excluded.</p>
+      <p id="admin-error" class="form-error" hidden></p>
+      <div class="dashboard-grid">
+        <article class="dashboard-card"><strong id="user-count">0</strong><span>Users</span></article>
+        <article class="dashboard-card"><strong id="account-count">0</strong><span>Instagram accounts</span></article>
+      </div>
+      <h2>Users</h2>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Created</th></tr></thead><tbody id="users"></tbody></table></div>
+      <h2>Instagram accounts</h2>
+      <div class="table-wrap"><table><thead><tr><th>Owner ID</th><th>Username</th><th>Account ID</th><th>Expires</th></tr></thead><tbody id="accounts"></tbody></table></div>
+    </section>
+  </main>
+  <script src="admin.js"></script>
+</body>
+</html>

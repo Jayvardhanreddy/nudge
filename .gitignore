@@ -1,0 +1,8 @@
+node_modules/
+.env
+data/users.json
+data/instagram-accounts.json
+data/nudge.sqlite
+data/nudge.sqlite-shm
+data/nudge.sqlite-wal
+npm-debug.log*
