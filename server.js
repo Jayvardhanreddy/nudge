@@ -62,16 +62,26 @@ function requireSameOriginForStateChanges(request, response, next) {
   if (request.path === '/instagram/webhook') return next();
 
   const origin = request.get('origin');
-  if (origin) {
-    try {
-      const originUrl = new URL(origin);
-      if (originUrl.protocol !== request.protocol || originUrl.host !== request.get('host')) {
-        return response.status(403).json({ error: 'Cross-origin request blocked.' });
-      }
-    } catch {
+  if (!origin) return next();
+
+  try {
+    const originUrl = new URL(origin);
+    const requestHost = request.get('host');
+    const expectedProtocol = isProduction ? 'https:' : request.protocol + ':';
+
+    // Render terminates HTTPS at its proxy and forwards the request to Express over HTTP.
+    // Do not compare Origin's protocol directly with request.protocol.
+    // For this single-origin app, the browser origin must use the same host and HTTPS in production.
+    const sameHost = originUrl.host === requestHost;
+    const allowedProtocol = originUrl.protocol === expectedProtocol;
+
+    if (!sameHost || !allowedProtocol) {
       return response.status(403).json({ error: 'Cross-origin request blocked.' });
     }
+  } catch {
+    return response.status(403).json({ error: 'Cross-origin request blocked.' });
   }
+
   return next();
 }
 
