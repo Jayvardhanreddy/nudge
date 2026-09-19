@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Secure Checkout | Nudge</title>
+<meta name="description" content="Secure Nudge subscription checkout." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main style="min-height:100vh;display:grid;place-items:center;padding:24px;">
+  <section class="auth-card" style="max-width:520px;width:100%;text-align:center;">
+    <a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a>
+    <h1 id="checkoutTitle" style="margin-top:28px;">Preparing secure checkout…</h1>
+    <p id="checkoutMessage" class="lede">Verifying your Nudge session and preparing your subscription.</p>
+    <div id="checkoutError" class="form-error"></div>
+    <a id="loginLink" class="btn btn-accent btn-block" style="display:none;margin-top:18px;">Log in to continue</a>
+    <a href="dashboard.html" class="btn btn-ghost btn-block" style="margin-top:10px;">Back to dashboard</a>
+  </section>
+</main>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="billing.js"></script>
+</body>
+</html>
