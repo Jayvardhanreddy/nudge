@@ -130,8 +130,11 @@ async function nextSequence(name) {
     { $inc: { value: 1 } },
     { upsert: true, returnDocument: 'after' }
   );
-  const document = result && result.value ? result.value : result;
-  return document.value;
+  const document = result && result.value && typeof result.value === 'object' ? result.value : result;
+  if (!document || !Number.isSafeInteger(Number(document.value))) {
+    throw new Error('Failed to generate an automation ID.');
+  }
+  return Number(document.value);
 }
 
 async function run(sql, params = []) {
