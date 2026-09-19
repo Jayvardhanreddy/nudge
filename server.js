@@ -95,7 +95,7 @@ function requireAdmin(request, response, next) {
   return next();
 }
 
-app.post('/api/auth/signup', async (request, response, next) => {
+app.post('/api/auth/signup', loginRateLimit, async (request, response, next) => {
   try {
     const validationError = validateCredentials(request.body, true);
     if (validationError) return response.status(400).json({ error: validationError });
