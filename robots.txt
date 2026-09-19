@@ -7,4 +7,4 @@ Disallow: /automations.html
 Disallow: /messages.html
 Disallow: /analytics.html
 Disallow: /settings.html
-Sitemap: http://localhost:3000/sitemap.xml
+Sitemap: https://nudge-dto0.onrender.com/sitemap.xml
