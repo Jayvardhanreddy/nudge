@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Creator Toolkit - Nudge</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="app-body" data-page="creator-tools">
+<div class="app-shell">
+<aside class="app-sidebar" id="appSidebar">
+  <div class="sidebar-top"><a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose" aria-label="Close menu">×</button></div>
+  <nav class="app-nav" aria-label="Dashboard navigation">
+    <a href="dashboard.html"><span class="nav-icon">+</span>Dashboard</a>
+    <a href="instagram-accounts.html"><span class="nav-icon">i</span>Instagram Accounts</a>
+    <a href="automations.html"><span class="nav-icon">a</span>Automations</a>
+    <a href="messages.html"><span class="nav-icon">m</span>Messages</a>
+    <a href="analytics.html"><span class="nav-icon">%</span>Analytics</a>
+    <a href="creator-tools.html" class="active"><span class="nav-icon">$</span>Creator Toolkit</a>
+    <a href="settings.html"><span class="nav-icon">*</span>Settings</a>
+    <a href="help.html"><span class="nav-icon">?</span>Help Desk</a>
+  </nav>
+  <div class="sidebar-foot"><p>Turn attention into revenue.</p><a href="index.html">Back to website</a></div>
+</aside>
+<div class="app-main">
+<header class="app-header">
+  <button class="menu-button" id="sidebarOpen" aria-label="Open menu"><span></span><span></span><span></span></button>
+  <div class="app-header-copy"><p class="eyebrow">Creator growth</p><h1>Creator Toolkit</h1></div>
+  <div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span></div><button class="btn btn-ghost app-logout" id="logoutButton">Log out</button></div>
+</header>
+<main class="app-content">
+<div id="dashboardError" class="form-error"></div>
+<section class="accounts-heading"><div><p class="eyebrow">Monetize smarter</p><h2>Tools creators use every week</h2><p>Plan offers, build tracked links and turn content ideas into conversion-ready copy.</p></div></section>
+
+<div class="creator-tool-grid">
+<section class="activity-card creator-tool-card">
+  <div class="card-heading"><h2>Revenue calculator</h2><p>See what a campaign could generate before you launch it.</p></div>
+  <div class="tool-form-grid">
+    <div class="field"><label for="reach">Reach</label><input class="form-control" id="reach" type="number" min="0" value="10000"></div>
+    <div class="field"><label for="leadRate">Lead rate %</label><input class="form-control" id="leadRate" type="number" min="0" max="100" step="0.1" value="3"></div>
+    <div class="field"><label for="closeRate">Close rate %</label><input class="form-control" id="closeRate" type="number" min="0" max="100" step="0.1" value="10"></div>
+    <div class="field"><label for="price">Offer price (₹)</label><input class="form-control" id="price" type="number" min="0" value="999"></div>
+  </div>
+  <div class="tool-result"><span>Estimated revenue</span><strong id="revenueResult">₹2,997</strong><small id="revenueMeta">300 leads · 30 customers</small></div>
+</section>
+
+<section class="activity-card creator-tool-card">
+  <div class="card-heading"><h2>UTM link builder</h2><p>Track which Reel, Story or campaign actually drives clicks.</p></div>
+  <div class="field"><label for="baseUrl">Destination URL</label><input class="form-control" id="baseUrl" type="url" placeholder="https://example.com/offer"></div>
+  <div class="tool-form-grid">
+    <div class="field"><label for="campaign">Campaign</label><input class="form-control" id="campaign" placeholder="october-launch"></div>
+    <div class="field"><label for="content">Content</label><input class="form-control" id="content" placeholder="reel-01"></div>
+  </div>
+  <button class="btn btn-accent" id="buildUtm">Build tracked link</button>
+  <div class="tool-output" id="utmOutput">Your tracked link will appear here.</div>
+  <button class="btn btn-ghost" id="copyUtm" disabled>Copy link</button>
+</section>
+
+<section class="activity-card creator-tool-card">
+  <div class="card-heading"><h2>Offer CTA generator</h2><p>Create a short conversion-focused CTA without needing AI credits.</p></div>
+  <div class="field"><label for="offer">What are you selling?</label><input class="form-control" id="offer" placeholder="30-minute fitness consultation"></div>
+  <div class="field"><label for="keyword">Comment keyword</label><input class="form-control" id="keyword" value="INFO"></div>
+  <button class="btn btn-accent" id="generateCta">Generate CTA</button>
+  <div class="tool-output" id="ctaOutput">Example: Comment INFO and I'll send you the details.</div>
+</section>
+
+<section class="activity-card creator-tool-card">
+  <div class="card-heading"><h2>Content idea bank</h2><p>Save hooks and campaign ideas locally so good ideas do not disappear.</p></div>
+  <div class="field"><label for="ideaInput">New idea</label><input class="form-control" id="ideaInput" placeholder="3 mistakes creators make when pricing a service"></div>
+  <button class="btn btn-accent" id="saveIdea">Save idea</button>
+  <div id="ideaList" class="idea-list"></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<script src="dashboard.js"></script>
+<script src="creator-tools.js"></script>
+</body>
+</html>
