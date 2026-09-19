@@ -118,12 +118,15 @@ function verifyNudgeJwt(token) {
   return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'], issuer: 'nudge-app', audience: 'nudge-web' });
 }
 
+const AUTH_SESSION_DAYS = 30;
+const AUTH_SESSION_MS = AUTH_SESSION_DAYS * 24 * 60 * 60 * 1000;
+
 function setAuthCookie(response, user) {
   response.cookie('nudge_token', authService.createToken(user), {
     httpOnly: true,
     sameSite: 'lax',
     secure: isProduction,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: AUTH_SESSION_MS,
     path: '/'
   });
 }
@@ -136,6 +139,10 @@ async function requireAuth(request, response, next) {
     const user = await authService.getUserById(payload.sub);
     if (!user) return response.status(401).json({ error: 'Authentication required.' });
     request.user = user;
+    // Sliding session: keep an authenticated user signed in while the site is actively used.
+    // This also refreshes the persistent cookie instead of silently letting the browser
+    // keep an old token that is close to expiry.
+    setAuthCookie(response, user);
     return next();
   } catch (error) {
     return response.status(401).json({ error: 'Authentication required.' });
