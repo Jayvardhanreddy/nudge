@@ -136,55 +136,17 @@
     return data;
   }
 
-  async function continueToSelectedPlan() {
+  function continueToSelectedPlan() {
     var q = new URLSearchParams(window.location.search);
     var plan = q.get('plan');
     if (!plan || plan === 'free') {
-      window.location.href = 'dashboard.html';
+      window.location.replace('dashboard.html');
       return;
     }
     var billing = q.get('billing') === 'annual' ? 'annual' : 'monthly';
-    var planKey = plan + '_' + billing;
-    if (!window.Razorpay) {
-      showError('Payment checkout could not load. Please refresh and try again.');
-      return;
-    }
-    try {
-      var response = await fetch('/api/billing/create-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ planKey: planKey })
-      });
-      var data = await response.json().catch(function(){ return {}; });
-      if (!response.ok) throw new Error(data.error || 'Unable to start subscription checkout.');
-      var checkout = new Razorpay({
-        key: data.keyId,
-        subscription_id: data.subscriptionId,
-        name: data.name,
-        description: plan.charAt(0).toUpperCase() + plan.slice(1) + ' plan',
-        prefill: data.prefill,
-        theme: { color: '#111111' },
-        handler: async function (payment) {
-          var verifyResponse = await fetch('/api/billing/verify-subscription', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify(payment)
-          });
-          var verifyData = await verifyResponse.json().catch(function(){ return {}; });
-          if (!verifyResponse.ok) {
-            showError(verifyData.error || 'Payment verification failed.');
-            return;
-          }
-          window.location.href = 'dashboard.html?billing=success';
-        },
-        modal: { ondismiss: function () { window.location.href = 'dashboard.html?billing=cancelled'; } }
-      });
-      checkout.open();
-    } catch (error) {
-      showError(error.message);
-    }
+    // Authentication must never create a subscription. The dedicated
+    // billing page performs exactly one checkout initialization.
+    window.location.replace('billing.html?plan=' + encodeURIComponent(plan) + '&billing=' + billing);
   }
 
   loginForm.addEventListener('submit', function (e) {
@@ -197,7 +159,7 @@
     }
     errorBox.classList.remove('show');
     submitAuth('/api/auth/login', { email: email, password: password })
-      .then(function () { var q = new URLSearchParams(window.location.search); if (q.get('connect') === 'instagram') { window.location.href = '/api/instagram/authorize'; return; } return continueToSelectedPlan(); })
+      .then(function () { var q = new URLSearchParams(window.location.search); if (q.get('connect') === 'instagram') { window.location.replace('/api/instagram/authorize'); return; } continueToSelectedPlan(); })
       .catch(function (error) { showError(error.message); });
   });
 
