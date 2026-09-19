@@ -57,7 +57,7 @@
       });
       document.querySelectorAll('[data-plan-button]').forEach(function (link) {
         var plan = link.getAttribute('data-plan-button');
-        link.href = 'login.html?tab=signup&plan=' + encodeURIComponent(plan) + '&billing=' + cycle;
+        link.href = 'billing.html?plan=' + encodeURIComponent(plan) + '&billing=' + cycle;
       });
     });
   });
