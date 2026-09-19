@@ -35,32 +35,47 @@ function publicAccount(account) {
   };
 }
 
+function metaErrorMessage(data, fallback) {
+  return data?.error?.message || data?.error_message || data?.message || fallback;
+}
+
 async function exchangeCode(code) {
   ensureConfiguration();
+
   const form = new FormData();
   form.set('client_id', process.env.META_APP_ID);
   form.set('client_secret', process.env.META_APP_SECRET);
   form.set('grant_type', 'authorization_code');
   form.set('redirect_uri', process.env.META_REDIRECT_URI);
   form.set('code', code);
+
   const response = await fetch('https://api.instagram.com/oauth/access_token', { method: 'POST', body: form });
   const data = await response.json().catch(() => ({}));
+
   if (!response.ok || !data.access_token) {
-    const error = new Error(data.error_message || data.error?.message || 'Instagram authorization code exchange failed.');
+    const error = new Error(`Instagram code exchange failed (HTTP ${response.status}): ${metaErrorMessage(data, 'No access token returned.')}`);
     error.statusCode = 502;
+    error.stage = 'code_exchange';
+    error.metaError = data.error;
     throw error;
   }
+
   const longLivedUrl = new URL('https://graph.instagram.com/access_token');
   longLivedUrl.searchParams.set('grant_type', 'ig_exchange_token');
   longLivedUrl.searchParams.set('client_secret', process.env.META_APP_SECRET);
   longLivedUrl.searchParams.set('access_token', data.access_token);
+
   const longLivedResponse = await fetch(longLivedUrl);
   const longLivedData = await longLivedResponse.json().catch(() => ({}));
+
   if (!longLivedResponse.ok || !longLivedData.access_token) {
-    const error = new Error(longLivedData.error?.message || 'Instagram long-lived token exchange failed.');
+    const error = new Error(`Instagram long-lived token exchange failed (HTTP ${longLivedResponse.status}): ${metaErrorMessage(longLivedData, 'No long-lived access token returned.')}`);
     error.statusCode = 502;
+    error.stage = 'long_lived_exchange';
+    error.metaError = longLivedData.error;
     throw error;
   }
+
   return { accessToken: longLivedData.access_token, expiresIn: Number(longLivedData.expires_in) || 0 };
 }
 
@@ -68,30 +83,39 @@ async function fetchProfile(accessToken) {
   const profileUrl = new URL(`https://graph.instagram.com/${apiVersion}/me`);
   profileUrl.searchParams.set('fields', 'user_id,username');
   profileUrl.searchParams.set('access_token', accessToken);
+
   const response = await fetch(profileUrl);
   const data = await response.json().catch(() => ({}));
+
   if (!response.ok || !data.user_id) {
-    const error = new Error(data.error?.message || 'Unable to read the Instagram account profile.');
+    const error = new Error(`Instagram profile lookup failed (HTTP ${response.status}): ${metaErrorMessage(data, 'No Instagram user profile returned.')}`);
     error.statusCode = 502;
+    error.stage = 'profile_lookup';
+    error.metaError = data.error;
     throw error;
   }
+
   return { userId: String(data.user_id), username: data.username || 'Instagram account' };
 }
 
 async function subscribeToWebhooks(instagramUserId, accessToken) {
   const url = new URL(`https://graph.instagram.com/${apiVersion}/${instagramUserId}/subscribed_apps`);
   url.searchParams.set('subscribed_fields', 'comments');
+
   const response = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   const data = await response.json().catch(() => ({}));
+
   if (!response.ok || data.success !== true) {
-    const error = new Error(data.error?.message || data.error_message || 'Unable to subscribe the Instagram account to comment webhooks.');
+    const error = new Error(`Instagram webhook subscription failed (HTTP ${response.status}): ${metaErrorMessage(data, 'Subscription was not accepted.')}`);
     error.statusCode = response.status || 502;
+    error.stage = 'webhook_subscription';
     error.metaError = data.error;
     throw error;
   }
+
   console.log(`Instagram webhook subscription succeeded for account ${instagramUserId}.`);
   return data;
 }
@@ -176,6 +200,7 @@ async function sendPrivateReply(instagramUserId, commentId, messageText, accessT
   const bodyData = { recipient: { comment_id: commentId }, message: { text: messageText } };
   let response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(bodyData) });
   let data = await response.json().catch(() => ({}));
+
   if (!response.ok && (response.status === 404 || data.error?.code === 100 || data.error?.type === 'OAuthException')) {
     const fallbackUrl = `https://graph.facebook.com/${apiVersion}/${instagramUserId}/messages`;
     const fallbackResponse = await fetch(fallbackUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(bodyData) });
@@ -183,12 +208,14 @@ async function sendPrivateReply(instagramUserId, commentId, messageText, accessT
     if (fallbackResponse.ok && (fallbackData.message_id || fallbackData.id)) return fallbackData;
     if (!fallbackResponse.ok) { data = fallbackData; response = fallbackResponse; }
   }
+
   if (!response.ok || (data.error && !data.message_id && !data.id)) {
-    const error = new Error(`Instagram API Error: ${data.error?.message || data.error_message || 'Instagram API call failed.'}`);
+    const error = new Error(`Instagram API Error: ${metaErrorMessage(data, 'Instagram API call failed.')}`);
     error.statusCode = response.status || 502;
     error.metaError = data.error;
     throw error;
   }
+
   return data;
 }
 
