@@ -180,8 +180,10 @@ async function getDecryptedTokenForAccount(ownerUserId, instagramUserId) {
   return decryptToken(account.ciphertext, account.iv, account.tag);
 }
 
-async function getDecryptedTokenByInstagramUserId(instagramUserId) {
-  const account = await db.get('SELECT * FROM instagram_accounts WHERE instagram_user_id = ? ORDER BY expires_at DESC LIMIT 1', [instagramUserId]);
+async function getDecryptedTokenByInstagramUserId(instagramUserId, ownerUserId) {
+  const account = ownerUserId
+    ? await db.get('SELECT * FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [ownerUserId, instagramUserId])
+    : await db.get('SELECT * FROM instagram_accounts WHERE instagram_user_id = ? ORDER BY expires_at DESC LIMIT 1', [instagramUserId]);
   if (!account) {
     const error = new Error(`Connected Instagram account ${instagramUserId} not found.`);
     error.statusCode = 404;
