@@ -596,3 +596,79 @@ body{background:radial-gradient(circle at 85% -10%,rgba(124,108,255,.13),transpa
 .cookie-consent{background:#11131d;border:1px solid var(--line)}
 :focus-visible{outline-color:#9a90ff}
 @media(max-width:600px){.hero{padding-top:42px}.app-content{padding-top:24px}}
+
+
+/* ============================================================
+   Nudge UI quality pass — contrast, surfaces, controls
+   ============================================================ */
+:root{
+  --bg:#070912;
+  --surface:#0f1420;
+  --surface-2:#151b2a;
+  --ink:#f7f9ff;
+  --ink-soft:#aeb7ca;
+  --ink-muted:#7f8aa3;
+  --line:#2a3347;
+  --line-strong:#3a4660;
+  --accent:#8b7cff;
+  --accent-strong:#6f5df5;
+  --accent-tint:#211c46;
+  --teal:#39d9b3;
+  --teal-tint:#10332d;
+  --danger:#ff7f99;
+  --danger-tint:#351824;
+}
+body{background:radial-gradient(900px 420px at 82% -5%,rgba(139,124,255,.16),transparent 62%),linear-gradient(180deg,#070912 0%,#090d16 100%);color:var(--ink)}
+body::selection{background:rgba(139,124,255,.35);color:#fff}
+.site-header,.app-header{background:rgba(7,9,18,.92);border-color:var(--line);backdrop-filter:blur(16px)}
+.main-nav a,.profile-copy span,.stat span,.section-head p,.hero-copy p.lede,.step p,.t-handle,.plan-desc,.pricing-note,.faq-a p,.footer-col a,.footer-bottom,.auth-quote span,.auth-side-foot,.field-row,.checkbox-row,.auth-switch{color:var(--ink-soft)}
+.main-nav a:hover,.footer-col a:hover{color:#fff}
+.btn-ghost{background:#111725;color:#f7f9ff;border-color:var(--line-strong)}
+.btn-ghost:hover{background:#171e2e;border-color:#596680;color:#fff}
+.btn-accent{background:linear-gradient(135deg,#9a8eff 0%,#6f5df5 100%);color:#fff;border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 30px rgba(111,93,245,.25)}
+.btn-accent:hover{background:linear-gradient(135deg,#a79dff 0%,#7b69ff 100%)}
+.btn-primary{background:#f7f9ff;color:#080a11}.btn-primary:hover{background:#dfe4f2}
+.btn:disabled,.oauth-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.chat-mock,.t-card,.plan,.overview-card,.activity-card,.placeholder-card,.instagram-account-card,.auth-tabs,.pricing-toggle{background:linear-gradient(180deg,#121826,#0d121c);border-color:var(--line);box-shadow:0 18px 55px rgba(0,0,0,.24)}
+.chat-mock .who{border-color:var(--line)}
+.bubble.in{background:#192131;color:#e7ebf5}.bubble.out{background:#2b2450;color:#fff}
+.stat-strip{background:#0d121c;border-color:var(--line)}
+.section[style*="background:var(--surface)"]{background:#0d121c!important}
+.auth-side,.app-sidebar{background:linear-gradient(180deg,#121729,#080b13);border-color:var(--line)}
+.auth-main{background:transparent}
+.auth-tabs button,.pricing-toggle button{color:var(--ink-soft)}
+.auth-tabs button.active,.pricing-toggle button.active{background:#f7f9ff;color:#080a11}
+.field input,.form-control,.oauth-btn{background:#0e1420;color:#f7f9ff;border-color:var(--line-strong)}
+.field input:hover,.form-control:hover,.oauth-btn:hover{border-color:#4a5772}
+.field input:focus,.form-control:focus{border-color:#8173ff;box-shadow:0 0 0 3px rgba(139,124,255,.15)}
+.field input::placeholder,.form-control::placeholder{color:#738099}
+select.form-control{color:#f7f9ff}
+select.form-control option{background:#0e1420;color:#f7f9ff}
+.oauth-btn{color:#f7f9ff}
+.oauth-btn::before{content:"";width:18px;height:18px;border-radius:4px;background:linear-gradient(135deg,#fff,#dce2ef);display:block;flex:none}
+.auth-card h1,.accounts-heading h2,.welcome-row h2,.card-heading h2,.placeholder-card h2,.faq-q,.plan-name,.plan-price,.step h3{color:#f7f9ff}
+.auth-card .lede,.accounts-heading p:not(.eyebrow),.card-heading p,.profile-copy span{color:var(--ink-soft)!important}
+.form-error{background:var(--danger-tint);color:#ffb1c0;border-color:#9e4056}
+.success-notice{background:var(--teal-tint);color:#79ead2;border-color:#287563}
+.overview-card strong{color:#fff}.overview-label{color:#aeb7ca}.overview-note{color:#7f8aa3}
+.app-nav a{color:#a2abc0}.app-nav a:hover,.app-nav a.active{background:rgba(139,124,255,.14);color:#fff}
+.nav-icon{border-color:#3b465e;color:#d2d8e6;background:#111725}
+.sidebar-foot{border-color:rgba(255,255,255,.1);color:#8d98ae}
+.connect-card{border-color:#343957}
+.connect-copy p:not(.eyebrow){color:#c1c8d8}
+.placeholder-card>p:not(.eyebrow),.empty-state p{color:var(--ink-soft)}
+.empty-state h3{color:#f7f9ff}.empty-icon{border-color:var(--line-strong)}
+.account-info span{color:#aeb7ca}.account-info small{color:var(--teal)}
+.account-avatar{background:#241f4e;color:#b8afff}
+.coming-badge{background:#2a2047;color:#c9c0ff;border-color:#4e4190}
+code{color:#e7eaff!important;background:#171e2d!important}
+.site-footer{border-color:var(--line)}
+.cta-band{background:linear-gradient(135deg,#17152b,#0c1019);border:1px solid #343957}
+.cta-band p{color:#bfc6d7}
+:focus-visible{outline:3px solid #a99fff;outline-offset:3px}
+@media(max-width:600px){
+  .header-actions .btn-primary{display:inline-flex}
+  .main-nav{background:#0b101a}
+  .hero-copy h1{font-size:clamp(2.25rem,11vw,3rem)}
+  .oauth-btn{min-height:48px}
+}
