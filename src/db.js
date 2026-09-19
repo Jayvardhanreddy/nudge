@@ -1,6 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const databaseName = process.env.MONGODB_DB_NAME || 'nudge';
 const usersFile = path.join(__dirname, '..', 'data', 'users.json');
@@ -135,6 +135,16 @@ async function nextSequence(name) {
     throw new Error('Failed to generate an automation ID.');
   }
   return Number(document.value);
+}
+
+function automationIdFilter(value) {
+  const raw = String(value ?? '').trim();
+  if (/^\d+$/.test(raw)) {
+    const numeric = Number(raw);
+    if (Number.isSafeInteger(numeric) && numeric > 0) return { id: numeric };
+  }
+  if (/^[a-f0-9]{24}$/i.test(raw)) return { _id: new ObjectId(raw) };
+  return null;
 }
 
 async function run(sql, params = []) {
