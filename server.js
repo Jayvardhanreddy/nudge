@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const db = require('./src/db');
 const authService = require('./src/auth/authService');
 const instagramService = require('./src/instagram/instagramService');
+const billing = require('./src/billing');
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -24,7 +25,7 @@ app.use((request, response, next) => {
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
   response.setHeader('X-DNS-Prefetch-Control', 'off');
-  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.openai.com https://api.instagram.com https://graph.instagram.com https://graph.facebook.com https://oauth2.googleapis.com; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';");
+  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.openai.com https://api.instagram.com https://graph.instagram.com https://graph.facebook.com https://oauth2.googleapis.com; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';");
   if (isProduction) response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   if (request.path.startsWith('/api/')) response.setHeader('Cache-Control', 'no-store');
   next();
@@ -50,6 +51,8 @@ async function loginRateLimit(request, response, next) {
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error('JWT_SECRET must be set to a random value of at least 32 characters.');
 }
+
+billing.register(app);
 
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
@@ -726,7 +729,8 @@ app.use((error, request, response, next) => {
   });
 });
 
-db.initialize().then(() => {
+db.initialize().then(async () => {
+  await billing.ensurePlans();
   app.listen(port, '0.0.0.0', () => {
     console.log(`Nudge is running on port ${port}`);
   });
