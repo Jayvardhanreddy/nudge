@@ -113,4 +113,126 @@ async function listAllAccounts() {
     username, expires_at AS expiresAt, connected_at AS connectedAt FROM instagram_accounts`);
 }
 
-module.exports = { ensureConfiguration, exchangeCode, fetchProfile, saveAccount, listAccounts, disconnect, listAllAccounts };
+function decryptToken(ciphertext, iv, tag) {
+  ensureConfiguration();
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    Buffer.from(process.env.META_TOKEN_ENCRYPTION_KEY, 'hex'),
+    Buffer.from(iv, 'base64')
+  );
+  decipher.setAuthTag(Buffer.from(tag, 'base64'));
+  const decrypted = Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64')), decipher.final()]);
+  return decrypted.toString('utf8');
+}
+
+async function getAccount(ownerUserId, instagramUserId) {
+  return db.get(
+    'SELECT * FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
+    [ownerUserId, instagramUserId]
+  );
+}
+
+async function getDecryptedTokenForAccount(ownerUserId, instagramUserId) {
+  const account = await getAccount(ownerUserId, instagramUserId);
+  if (!account) {
+    const error = new Error('Connected Instagram account not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+  if (account.expires_at <= Date.now()) {
+    const error = new Error('Instagram access token has expired. Please reconnect your account.');
+    error.statusCode = 401;
+    throw error;
+  }
+  return decryptToken(account.ciphertext, account.iv, account.tag);
+}
+
+async function getDecryptedTokenByInstagramUserId(instagramUserId) {
+  const account = await db.get(
+    'SELECT * FROM instagram_accounts WHERE instagram_user_id = ? ORDER BY expires_at DESC LIMIT 1',
+    [instagramUserId]
+  );
+  if (!account) {
+    const error = new Error(`Connected Instagram account ${instagramUserId} not found.`);
+    error.statusCode = 404;
+    throw error;
+  }
+  if (account.expires_at <= Date.now()) {
+    const error = new Error('Instagram access token has expired.');
+    error.statusCode = 401;
+    throw error;
+  }
+  return {
+    accessToken: decryptToken(account.ciphertext, account.iv, account.tag),
+    ownerUserId: account.owner_user_id,
+    username: account.username
+  };
+}
+
+async function sendPrivateReply(instagramUserId, commentId, messageText, accessToken) {
+  const url = `https://graph.instagram.com/${apiVersion}/${instagramUserId}/messages`;
+  const bodyData = {
+    recipient: {
+      comment_id: commentId
+    },
+    message: {
+      text: messageText
+    }
+  };
+
+  let response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: JSON.stringify(bodyData)
+  });
+
+  let data = await response.json().catch(() => ({}));
+
+  if (!response.ok && (response.status === 404 || data.error?.code === 100 || data.error?.type === 'OAuthException')) {
+    const fallbackUrl = `https://graph.facebook.com/${apiVersion}/${instagramUserId}/messages`;
+    const fallbackResponse = await fetch(fallbackUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(bodyData)
+    });
+    const fallbackData = await fallbackResponse.json().catch(() => ({}));
+    if (fallbackResponse.ok && (fallbackData.message_id || fallbackData.id)) {
+      return fallbackData;
+    }
+    if (!fallbackResponse.ok) {
+      data = fallbackData;
+      response = fallbackResponse;
+    }
+  }
+
+  if (!response.ok || (data.error && !data.message_id && !data.id)) {
+    const errorMessage = data.error?.message || data.error_message || 'Instagram API call failed.';
+    const error = new Error(`Instagram API Error: ${errorMessage}`);
+    error.statusCode = response.status || 502;
+    error.metaError = data.error;
+    throw error;
+  }
+
+  return data;
+}
+
+module.exports = {
+  ensureConfiguration,
+  exchangeCode,
+  fetchProfile,
+  saveAccount,
+  listAccounts,
+  disconnect,
+  listAllAccounts,
+  getAccount,
+  decryptToken,
+  getDecryptedTokenForAccount,
+  getDecryptedTokenByInstagramUserId,
+  sendPrivateReply
+};

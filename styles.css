@@ -460,6 +460,14 @@ p{ margin:0; }
 .account-info span,.account-info small{ color:var(--ink-soft); font-size:.8rem; }
 .account-info small{ color:var(--teal); font-weight:600; margin-top:2px; }
 .accounts-empty{ margin:0; max-width:none; }
+.form-control{
+  width:100%; padding:12px 14px; border-radius:var(--radius-s); border:1.5px solid var(--line);
+  font-size:0.95rem; font-family:var(--sans); background:var(--surface); color:var(--ink);
+}
+.form-control:focus{ border-color:var(--ink); outline:none; }
+textarea.form-control{ resize:vertical; min-height:80px; }
+select.form-control{ appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235B5470' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+.automation-card-form{ margin-bottom:28px; }
 
 /* ============================================================
    Responsive

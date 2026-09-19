@@ -1,4 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Automations - Nudge</title><link rel="stylesheet" href="styles.css" /></head>
-<body class="app-body" data-page="automations"><div class="app-shell"><aside class="app-sidebar" id="appSidebar"><div class="sidebar-top"><a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose" aria-label="Close menu">x</button></div><nav class="app-nav" aria-label="Dashboard navigation"><a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a><a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a><a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a><a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a><a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a><a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a></nav><div class="sidebar-foot"><p>Instagram automation for creators.</p><a href="index.html">Back to website</a></div></aside><div class="app-main"><header class="app-header"><button class="menu-button" id="sidebarOpen" aria-label="Open menu"><span></span><span></span><span></span></button><div class="app-header-copy"><p class="eyebrow">Workspace</p><h1>Automations</h1></div><div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span></div><button class="btn btn-ghost app-logout" id="logoutButton">Log out</button></div></header><main class="app-content"><div id="dashboardError" class="form-error"></div><section class="placeholder-card"><div class="placeholder-icon">a</div><p class="eyebrow">Automations</p><h2>Build your first automation</h2><p>Comment-to-DM workflows and trigger templates will be available once an Instagram account is connected.</p><span class="coming-badge">Coming next</span></section></main></div></div><div class="sidebar-backdrop" id="sidebarBackdrop"></div><script src="dashboard.js"></script></body></html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automations - Nudge</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="app-body" data-page="automations">
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-top">
+        <a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">x</button>
+      </div>
+      <nav class="app-nav" aria-label="Dashboard navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a>
+        <a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a>
+        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a>
+        <a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a>
+      </nav>
+      <div class="sidebar-foot">
+        <p>Instagram automation for creators.</p>
+        <a href="index.html">Back to website</a>
+      </div>
+    </aside>
+    <div class="app-main">
+      <header class="app-header">
+        <button class="menu-button" id="sidebarOpen" aria-label="Open menu"><span></span><span></span><span></span></button>
+        <div class="app-header-copy">
+          <p class="eyebrow">Workspace</p>
+          <h1>Automations</h1>
+        </div>
+        <div class="profile-area">
+          <div class="profile-copy">
+            <strong id="userName">Loading...</strong>
+            <span id="userEmail">Verifying account</span>
+          </div>
+          <button class="btn btn-ghost app-logout" id="logoutButton">Log out</button>
+        </div>
+      </header>
+      <main class="app-content">
+        <div id="dashboardError" class="form-error"></div>
+        <div id="automationNotice" class="success-notice" hidden></div>
+
+        <section class="accounts-heading">
+          <div>
+            <p class="eyebrow">Workflows</p>
+            <h2>Comment-to-DM Automations</h2>
+            <p>Automatically reply to Instagram comments with private messages.</p>
+          </div>
+          <button class="btn btn-accent" id="openCreateAutomation" hidden>Create automation</button>
+        </section>
+
+        <!-- Warning when NO Instagram account is connected -->
+        <section id="noAccountWarning" class="placeholder-card accounts-empty" hidden>
+          <div class="placeholder-icon">i</div>
+          <h2>Connect an Instagram account first</h2>
+          <p>To create Comment-to-DM automations, you need to connect at least one professional Instagram account to Nudge.</p>
+          <a href="instagram-accounts.html" class="btn btn-accent">Go to Instagram Accounts</a>
+        </section>
+
+        <!-- Automation Create / Edit Form Card -->
+        <section id="automationFormCard" class="activity-card automation-card-form" hidden>
+          <div class="card-heading">
+            <div>
+              <h2 id="automationFormHeading">Create Automation</h2>
+              <p>Configure a keyword trigger and private reply message.</p>
+            </div>
+          </div>
+          <form id="automationForm" style="margin-top:20px;">
+            <input type="hidden" id="automationId" value="" />
+            
+            <div class="field">
+              <label for="automationAccountSelect">Instagram Account</label>
+              <select id="automationAccountSelect" class="form-control" required></select>
+            </div>
+
+            <div class="field">
+              <label for="automationKeywordInput">Trigger Keyword</label>
+              <input type="text" id="automationKeywordInput" class="form-control" placeholder="e.g. LINK" required />
+              <p style="font-size:0.8rem; color:var(--ink-soft); margin-top:4px;">Matches comments containing this keyword (case-insensitive).</p>
+            </div>
+
+            <div class="field">
+              <label for="automationDmMessageInput">Private Reply / DM Message</label>
+              <textarea id="automationDmMessageInput" class="form-control" rows="3" placeholder="e.g. Thanks for commenting! Here's the link you requested." required></textarea>
+            </div>
+
+            <div class="field">
+              <label class="checkbox-row" style="cursor:pointer;">
+                <input type="checkbox" id="automationEnabledCheckbox" checked />
+                <span>Enable this automation</span>
+              </label>
+            </div>
+
+            <div class="form-actions" style="display:flex; gap:12px; margin-top:24px;">
+              <button type="submit" class="btn btn-accent" id="saveAutomationBtn">Save Automation</button>
+              <button type="button" class="btn btn-ghost" id="cancelAutomationBtn">Cancel</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Automations Card List -->
+        <section id="automationsList" class="instagram-accounts" style="margin-top:20px;"></section>
+
+        <!-- Empty state when connected account exists but 0 automations -->
+        <section id="automationsEmpty" class="placeholder-card accounts-empty" hidden>
+          <div class="placeholder-icon">a</div>
+          <h2>No automations created yet</h2>
+          <p>Create your first Comment-to-DM automation to respond to Instagram comments automatically.</p>
+          <button class="btn btn-accent" id="createFirstAutomation">Create automation</button>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <script src="dashboard.js"></script>
+</body>
+</html>

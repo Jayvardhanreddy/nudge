@@ -103,6 +103,22 @@ async function initialize() {
     PRIMARY KEY (owner_user_id, instagram_user_id),
     FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
+  await run(`CREATE TABLE IF NOT EXISTS automations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_user_id TEXT NOT NULL,
+    instagram_user_id TEXT NOT NULL,
+    keyword TEXT NOT NULL,
+    dm_message TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (owner_user_id, instagram_user_id) REFERENCES instagram_accounts(owner_user_id, instagram_user_id) ON DELETE CASCADE
+  )`);
+  await run(`CREATE TABLE IF NOT EXISTS webhook_events (
+    event_id TEXT PRIMARY KEY,
+    processed_at TEXT NOT NULL
+  )`);
   await migrateJsonData();
 }
 

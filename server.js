@@ -115,7 +115,7 @@ app.get('/api/instagram/authorize', requireAuth, (request, response, next) => {
     authorizeUrl.searchParams.set('client_id', process.env.META_APP_ID);
     authorizeUrl.searchParams.set('redirect_uri', process.env.META_REDIRECT_URI);
     authorizeUrl.searchParams.set('response_type', 'code');
-    authorizeUrl.searchParams.set('scope', 'instagram_business_basic');
+    authorizeUrl.searchParams.set('scope', 'instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages');
     authorizeUrl.searchParams.set('state', state);
     return response.redirect(authorizeUrl.toString());
   } catch (error) {
@@ -175,6 +175,264 @@ app.get('/api/admin/overview', requireAuth, requireAdmin, async (request, respon
     return response.json({ users, instagramAccounts });
   } catch (error) {
     return next(error);
+  }
+});
+
+app.get('/api/automations', requireAuth, async (request, response, next) => {
+  try {
+    const automations = await db.all(
+      `SELECT a.id, a.owner_user_id AS ownerUserId, a.instagram_user_id AS instagramUserId,
+              a.keyword, a.dm_message AS dmMessage, a.enabled, a.created_at AS createdAt,
+              a.updated_at AS updatedAt, i.username
+       FROM automations a
+       LEFT JOIN instagram_accounts i ON a.owner_user_id = i.owner_user_id AND a.instagram_user_id = i.instagram_user_id
+       WHERE a.owner_user_id = ?
+       ORDER BY a.created_at DESC`,
+      [request.user.id]
+    );
+    return response.json({ automations });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/api/automations', requireAuth, async (request, response, next) => {
+  try {
+    const { instagramUserId, keyword, dmMessage, enabled } = request.body || {};
+    const trimmedKeyword = typeof keyword === 'string' ? keyword.trim() : '';
+    const trimmedMessage = typeof dmMessage === 'string' ? dmMessage.trim() : '';
+    const targetIgId = typeof instagramUserId === 'string' ? instagramUserId.trim() : '';
+
+    if (!targetIgId) {
+      return response.status(400).json({ error: 'Please select a connected Instagram account.' });
+    }
+    if (!trimmedKeyword) {
+      return response.status(400).json({ error: 'Keyword must not be empty.' });
+    }
+    if (!trimmedMessage) {
+      return response.status(400).json({ error: 'DM message must not be empty.' });
+    }
+
+    const account = await db.get(
+      'SELECT owner_user_id, username FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
+      [request.user.id, targetIgId]
+    );
+    if (!account) {
+      return response.status(403).json({ error: 'Instagram account not found or not owned by you.' });
+    }
+
+    const now = new Date().toISOString();
+    const isEnabled = enabled === false || enabled === 0 ? 0 : 1;
+
+    const result = await db.run(
+      `INSERT INTO automations (owner_user_id, instagram_user_id, keyword, dm_message, enabled, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [request.user.id, targetIgId, trimmedKeyword, trimmedMessage, isEnabled, now, now]
+    );
+
+    const created = await db.get(
+      `SELECT a.id, a.owner_user_id AS ownerUserId, a.instagram_user_id AS instagramUserId,
+              a.keyword, a.dm_message AS dmMessage, a.enabled, a.created_at AS createdAt,
+              a.updated_at AS updatedAt, i.username
+       FROM automations a
+       LEFT JOIN instagram_accounts i ON a.owner_user_id = i.owner_user_id AND a.instagram_user_id = i.instagram_user_id
+       WHERE a.id = ?`,
+      [result.lastID]
+    );
+
+    return response.status(201).json({ automation: created });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.patch('/api/automations/:id', requireAuth, async (request, response, next) => {
+  try {
+    const automationId = Number(request.params.id);
+    if (!Number.isInteger(automationId) || automationId <= 0) {
+      return response.status(400).json({ error: 'Invalid automation ID.' });
+    }
+
+    const existing = await db.get(
+      'SELECT * FROM automations WHERE id = ? AND owner_user_id = ?',
+      [automationId, request.user.id]
+    );
+    if (!existing) {
+      return response.status(404).json({ error: 'Automation not found.' });
+    }
+
+    const { instagramUserId, keyword, dmMessage, enabled } = request.body || {};
+
+    let targetIgId = existing.instagram_user_id;
+    if (typeof instagramUserId === 'string' && instagramUserId.trim() !== '') {
+      targetIgId = instagramUserId.trim();
+      const account = await db.get(
+        'SELECT owner_user_id FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
+        [request.user.id, targetIgId]
+      );
+      if (!account) {
+        return response.status(403).json({ error: 'Instagram account not found or not owned by you.' });
+      }
+    }
+
+    let newKeyword = existing.keyword;
+    if (keyword !== undefined) {
+      if (typeof keyword !== 'string' || !keyword.trim()) {
+        return response.status(400).json({ error: 'Keyword must not be empty.' });
+      }
+      newKeyword = keyword.trim();
+    }
+
+    let newMessage = existing.dm_message;
+    if (dmMessage !== undefined) {
+      if (typeof dmMessage !== 'string' || !dmMessage.trim()) {
+        return response.status(400).json({ error: 'DM message must not be empty.' });
+      }
+      newMessage = dmMessage.trim();
+    }
+
+    let newEnabled = existing.enabled;
+    if (enabled !== undefined) {
+      newEnabled = enabled === true || enabled === 1 || enabled === '1' ? 1 : 0;
+    }
+
+    const now = new Date().toISOString();
+    await db.run(
+      `UPDATE automations
+       SET instagram_user_id = ?, keyword = ?, dm_message = ?, enabled = ?, updated_at = ?
+       WHERE id = ? AND owner_user_id = ?`,
+      [targetIgId, newKeyword, newMessage, newEnabled, now, automationId, request.user.id]
+    );
+
+    const updated = await db.get(
+      `SELECT a.id, a.owner_user_id AS ownerUserId, a.instagram_user_id AS instagramUserId,
+              a.keyword, a.dm_message AS dmMessage, a.enabled, a.created_at AS createdAt,
+              a.updated_at AS updatedAt, i.username
+       FROM automations a
+       LEFT JOIN instagram_accounts i ON a.owner_user_id = i.owner_user_id AND a.instagram_user_id = i.instagram_user_id
+       WHERE a.id = ?`,
+      [automationId]
+    );
+
+    return response.json({ automation: updated });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.delete('/api/automations/:id', requireAuth, async (request, response, next) => {
+  try {
+    const automationId = Number(request.params.id);
+    if (!Number.isInteger(automationId) || automationId <= 0) {
+      return response.status(400).json({ error: 'Invalid automation ID.' });
+    }
+
+    const result = await db.run(
+      'DELETE FROM automations WHERE id = ? AND owner_user_id = ?',
+      [automationId, request.user.id]
+    );
+
+    if (!result.changes) {
+      return response.status(404).json({ error: 'Automation not found.' });
+    }
+
+    return response.status(204).end();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/api/instagram/webhook', (request, response) => {
+  const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN;
+  if (!verifyToken) {
+    console.error('META_WEBHOOK_VERIFY_TOKEN is not configured.');
+    return response.status(500).json({ error: 'META_WEBHOOK_VERIFY_TOKEN environment variable is missing.' });
+  }
+
+  const mode = request.query['hub.mode'];
+  const token = request.query['hub.verify_token'];
+  const challenge = request.query['hub.challenge'];
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    console.log('Meta Webhook verification succeeded.');
+    return response.status(200).send(challenge);
+  } else {
+    console.warn('Meta Webhook verification failed due to token mismatch or invalid mode.');
+    return response.status(403).json({ error: 'Verification failed.' });
+  }
+});
+
+function keywordMatches(commentText, keyword) {
+  if (!commentText || !keyword) return false;
+  const cleanComment = commentText.toLowerCase().trim();
+  const cleanKeyword = keyword.toLowerCase().trim();
+  return cleanComment.includes(cleanKeyword);
+}
+
+app.post('/api/instagram/webhook', async (request, response) => {
+  response.status(200).json({ status: 'ok' });
+
+  try {
+    const payload = request.body;
+    if (!payload || payload.object !== 'instagram' || !Array.isArray(payload.entry)) {
+      return;
+    }
+
+    for (const entry of payload.entry) {
+      const recipientIgUserId = String(entry.id || '');
+      const changes = Array.isArray(entry.changes) ? entry.changes : [];
+
+      for (const change of changes) {
+        if (change.field !== 'comments' || !change.value) continue;
+
+        const commentVal = change.value;
+        const commentId = String(commentVal.id || '');
+        const commentText = String(commentVal.text || '');
+
+        if (!commentId || !commentText || !recipientIgUserId) continue;
+
+        const existingEvent = await db.get('SELECT event_id FROM webhook_events WHERE event_id = ?', [commentId]);
+        if (existingEvent) {
+          console.log(`Webhook comment event ${commentId} already processed. Skipping duplicate.`);
+          continue;
+        }
+
+        await db.run('INSERT OR IGNORE INTO webhook_events (event_id, processed_at) VALUES (?, ?)', [
+          commentId,
+          new Date().toISOString()
+        ]);
+
+        const automations = await db.all(
+          'SELECT * FROM automations WHERE instagram_user_id = ? AND enabled = 1',
+          [recipientIgUserId]
+        );
+
+        if (!automations || automations.length === 0) {
+          console.log(`No active automations configured for Instagram account ID: ${recipientIgUserId}`);
+          continue;
+        }
+
+        for (const auto of automations) {
+          if (keywordMatches(commentText, auto.keyword)) {
+            console.log(`Comment keyword "${auto.keyword}" matched for comment ID ${commentId}. Sending private reply.`);
+            try {
+              const tokenData = await instagramService.getDecryptedTokenByInstagramUserId(recipientIgUserId);
+              await instagramService.sendPrivateReply(
+                recipientIgUserId,
+                commentId,
+                auto.dm_message,
+                tokenData.accessToken
+              );
+              console.log(`Private reply successfully sent for comment ID ${commentId}.`);
+            } catch (apiErr) {
+              console.error(`Failed to send private reply for comment ID ${commentId}:`, apiErr.message);
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error processing Instagram webhook payload:', err.message);
   }
 });
 
