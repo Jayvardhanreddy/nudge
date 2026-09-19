@@ -20,60 +20,225 @@
     <a href="settings.html"><span class="nav-icon">*</span>Settings</a>
     <a href="help.html"><span class="nav-icon">?</span>Help Desk</a>
   </nav>
-  <div class="sidebar-foot"><p>Turn attention into revenue.</p><a href="index.html">Back to website</a></div>
+  <div class="sidebar-foot"><p>Plan. Create. Monetize. Measure.</p><a href="index.html">Back to website</a></div>
 </aside>
+
 <div class="app-main">
 <header class="app-header">
   <button class="menu-button" id="sidebarOpen" aria-label="Open menu"><span></span><span></span><span></span></button>
   <div class="app-header-copy"><p class="eyebrow">Creator growth</p><h1>Creator Toolkit</h1></div>
   <div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span></div><button class="btn btn-ghost app-logout" id="logoutButton">Log out</button></div>
 </header>
+
 <main class="app-content">
 <div id="dashboardError" class="form-error"></div>
-<section class="accounts-heading"><div><p class="eyebrow">Monetize smarter</p><h2>Tools creators use every week</h2><p>Plan offers, build tracked links and turn content ideas into conversion-ready copy.</p></div></section>
+<div id="creatorNotice" class="success-notice" hidden></div>
+
+<section class="accounts-heading">
+  <div><p class="eyebrow">Creator business workspace</p><h2>Everything you need to turn content into a business.</h2><p>Plan content, create faster, manage deals, track money and build a professional creator brand.</p></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-ghost" id="exportCreatorData">Export data</button><button class="btn btn-ghost" id="clearCreatorData">Clear toolkit data</button></div>
+</section>
+
+<section class="creator-dashboard-strip" aria-label="Creator business overview">
+  <div class="overview-card"><span class="overview-label">Planned content</span><strong id="summaryContent">0</strong><span class="overview-note">calendar items</span></div>
+  <div class="overview-card"><span class="overview-label">Active brand deals</span><strong id="summaryDeals">0</strong><span class="overview-note">not completed</span></div>
+  <div class="overview-card"><span class="overview-label">Tracked revenue</span><strong id="summaryRevenue">₹0</strong><span class="overview-note">deals + affiliate</span></div>
+  <div class="overview-card"><span class="overview-label">Goals completed</span><strong id="summaryGoals">0%</strong><span class="overview-note">current goal progress</span></div>
+</section>
 
 <div class="creator-tool-grid">
+
 <section class="activity-card creator-tool-card">
-  <div class="card-heading"><h2>Revenue calculator</h2><p>See what a campaign could generate before you launch it.</p></div>
-  <div class="tool-form-grid">
-    <div class="field"><label for="reach">Reach</label><input class="form-control" id="reach" type="number" min="0" value="10000"></div>
-    <div class="field"><label for="leadRate">Lead rate %</label><input class="form-control" id="leadRate" type="number" min="0" max="100" step="0.1" value="3"></div>
-    <div class="field"><label for="closeRate">Close rate %</label><input class="form-control" id="closeRate" type="number" min="0" max="100" step="0.1" value="10"></div>
-    <div class="field"><label for="price">Offer price (₹)</label><input class="form-control" id="price" type="number" min="0" value="999"></div>
-  </div>
-  <div class="tool-result"><span>Estimated revenue</span><strong id="revenueResult">₹2,997</strong><small id="revenueMeta">300 leads · 30 customers</small></div>
+<div class="card-heading"><h2>Content calendar</h2><p>Plan ideas and publishing dates without leaving Nudge.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="calDate">Date</label><input class="form-control" id="calDate" type="date"></div>
+<div class="field"><label for="calFormat">Format</label><select class="form-control" id="calFormat"><option>Reel</option><option>Carousel</option><option>Post</option><option>Story</option><option>Live</option></select></div>
+<div class="field"><label for="calTopic">Topic</label><input class="form-control" id="calTopic" placeholder="e.g. 3 AI tools for students"></div>
+<div class="field"><label for="calStatus">Status</label><select class="form-control" id="calStatus"><option>Idea</option><option>Draft</option><option>Ready</option><option>Published</option></select></div>
+</div>
+<button class="btn btn-accent" id="addCalendarItem" style="margin-top:14px">Add to calendar</button>
+<div id="calendarList" class="idea-list"></div>
 </section>
 
 <section class="activity-card creator-tool-card">
-  <div class="card-heading"><h2>UTM link builder</h2><p>Track which Reel, Story or campaign actually drives clicks.</p></div>
-  <div class="field"><label for="baseUrl">Destination URL</label><input class="form-control" id="baseUrl" type="url" placeholder="https://example.com/offer"></div>
-  <div class="tool-form-grid">
-    <div class="field"><label for="campaign">Campaign</label><input class="form-control" id="campaign" placeholder="october-launch"></div>
-    <div class="field"><label for="content">Content</label><input class="form-control" id="content" placeholder="reel-01"></div>
-  </div>
-  <button class="btn btn-accent" id="buildUtm">Build tracked link</button>
-  <div class="tool-output" id="utmOutput">Your tracked link will appear here.</div>
-  <button class="btn btn-ghost" id="copyUtm" disabled>Copy link</button>
+<div class="card-heading"><h2>Hook & caption studio</h2><p>Generate practical starting copy for Reels, carousels, posts and Stories.</p></div>
+<div class="field"><label for="contentTopic">Topic</label><input class="form-control" id="contentTopic" placeholder="e.g. 5 mistakes new creators make"></div>
+<div class="tool-form-grid">
+<div class="field"><label for="contentFormat">Format</label><select class="form-control" id="contentFormat"><option>Reel</option><option>Carousel</option><option>Post</option><option>Story</option></select></div>
+<div class="field"><label for="contentTone">Tone</label><select class="form-control" id="contentTone"><option>Educational</option><option>Bold</option><option>Friendly</option><option>Personal</option></select></div>
+</div>
+<button class="btn btn-accent" id="generateContent" style="margin-top:14px">Generate copy</button>
+<div class="tool-output" id="contentOutput">Your hook, structure and CTA will appear here.</div>
+<button class="btn btn-ghost" id="copyContent" style="margin-top:10px">Copy</button>
 </section>
 
 <section class="activity-card creator-tool-card">
-  <div class="card-heading"><h2>Offer CTA generator</h2><p>Create a short conversion-focused CTA without needing AI credits.</p></div>
-  <div class="field"><label for="offer">What are you selling?</label><input class="form-control" id="offer" placeholder="30-minute fitness consultation"></div>
-  <div class="field"><label for="keyword">Comment keyword</label><input class="form-control" id="keyword" value="INFO"></div>
-  <button class="btn btn-accent" id="generateCta">Generate CTA</button>
-  <div class="tool-output" id="ctaOutput">Example: Comment INFO and I'll send you the details.</div>
+<div class="card-heading"><h2>Reel script builder</h2><p>Build a short-form script with a hook, value beats, proof and CTA.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="scriptTopic">Topic</label><input class="form-control" id="scriptTopic" placeholder="e.g. grow from 0 followers"></div>
+<div class="field"><label for="scriptLength">Length</label><select class="form-control" id="scriptLength"><option>15 seconds</option><option selected>30 seconds</option><option>60 seconds</option></select></div>
+</div>
+<div class="field" style="margin-top:14px"><label for="scriptAudience">Audience</label><input class="form-control" id="scriptAudience" placeholder="new creators"></div>
+<button class="btn btn-accent" id="generateScript" style="margin-top:14px">Build script</button>
+<div class="tool-output" id="scriptOutput">Your script will appear here.</div>
+<button class="btn btn-ghost" id="copyScript" style="margin-top:10px">Copy script</button>
 </section>
 
 <section class="activity-card creator-tool-card">
-  <div class="card-heading"><h2>Content idea bank</h2><p>Save hooks and campaign ideas locally so good ideas do not disappear.</p></div>
-  <div class="field"><label for="ideaInput">New idea</label><input class="form-control" id="ideaInput" placeholder="3 mistakes creators make when pricing a service"></div>
-  <button class="btn btn-accent" id="saveIdea">Save idea</button>
-  <div id="ideaList" class="idea-list"></div>
+<div class="card-heading"><h2>Content repurposer</h2><p>Turn one idea into a complete cross-platform content pack.</p></div>
+<div class="field"><label for="repurposeInput">Original content / idea</label><textarea class="form-control" id="repurposeInput" rows="5" placeholder="Paste a Reel idea, video transcript or content summary"></textarea></div>
+<button class="btn btn-accent" id="repurposeContent" style="margin-top:14px">Repurpose</button>
+<div class="tool-output" id="repurposeOutput">Your Reel, carousel, Story and caption versions will appear here.</div>
+<button class="btn btn-ghost" id="copyRepurpose" style="margin-top:10px">Copy pack</button>
 </section>
 
-<section class="activity-card creator-tool-card"><div class="card-heading"><h2>Caption & hook studio</h2><p>Turn a topic into a hook, caption structure and CTA for Reels, carousels or posts.</p></div><div class="field"><label for="contentTopic">Topic</label><input class="form-control" id="contentTopic" placeholder="e.g. 5 mistakes new creators make"></div><div class="tool-form-grid"><div class="field"><label for="contentFormat">Format</label><select class="form-control" id="contentFormat"><option>Reel</option><option>Carousel</option><option>Post</option><option>Story</option></select></div><div class="field"><label for="contentTone">Tone</label><select class="form-control" id="contentTone"><option>Educational</option><option>Bold</option><option>Friendly</option><option>Personal</option></select></div></div><button class="btn btn-accent" id="generateContent">Generate content</button><div class="tool-output" id="contentOutput">Your hook, caption structure and CTA will appear here.</div><button class="btn btn-ghost" id="copyContent">Copy content</button></section>
-<section class="activity-card creator-tool-card"><div class="card-heading"><h2>Hashtag set builder</h2><p>Organize reusable hashtag groups by niche, audience and campaign.</p></div><div class="tool-form-grid"><div class="field"><label for="hashtagNiche">Niche</label><input class="form-control" id="hashtagNiche" placeholder="fitness"></div><div class="field"><label for="hashtagAudience">Audience</label><input class="form-control" id="hashtagAudience" placeholder="beginners"></div></div><button class="btn btn-accent" id="buildHashtags">Build set</button><div class="tool-output" id="hashtagOutput">Your hashtag set will appear here.</div><button class="btn btn-ghost" id="copyHashtags">Copy hashtags</button></section>
-<section class="activity-card creator-tool-card"><div class="card-heading"><h2>Brand deal calculator</h2><p>Estimate a starting quote from reach, engagement and deliverables. Use it as a planning tool, not a market guarantee.</p></div><div class="tool-form-grid"><div class="field"><label for="dealFollowers">Followers</label><input class="form-control" id="dealFollowers" type="number" min="0" value="10000"></div><div class="field"><label for="dealEngagement">Engagement %</label><input class="form-control" id="dealEngagement" type="number" min="0" max="100" step="0.1" value="3"></div><div class="field"><label for="dealDeliverables">Deliverables</label><input class="form-control" id="dealDeliverables" type="number" min="1" value="1"></div><div class="field"><label for="dealUsage">Usage rights %</label><input class="form-control" id="dealUsage" type="number" min="0" max="200" value="20"></div></div><button class="btn btn-accent" id="calculateDeal">Estimate quote</button><div class="tool-result"><span>Planning quote</span><strong id="dealResult">₹1,200</strong><small id="dealMeta">Editable estimate based on your inputs</small></div></section>
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Hashtag set builder</h2><p>Create reusable starting sets by niche and audience. Always review relevance before publishing.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="hashtagNiche">Niche</label><input class="form-control" id="hashtagNiche" placeholder="fitness"></div>
+<div class="field"><label for="hashtagAudience">Audience</label><input class="form-control" id="hashtagAudience" placeholder="beginners"></div>
+</div>
+<button class="btn btn-accent" id="buildHashtags" style="margin-top:14px">Build set</button>
+<div class="tool-output" id="hashtagOutput">Your hashtag set will appear here.</div>
+<button class="btn btn-ghost" id="copyHashtags" style="margin-top:10px">Copy hashtags</button>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Content idea bank</h2><p>Save ideas, hooks and campaign concepts locally.</p></div>
+<div class="field"><label for="ideaInput">New idea</label><input class="form-control" id="ideaInput" placeholder="3 mistakes creators make when pricing a service"></div>
+<button class="btn btn-accent" id="saveIdea" style="margin-top:14px">Save idea</button>
+<div id="ideaList" class="idea-list"></div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Creator revenue calculator</h2><p>Model leads, customers and revenue from a campaign.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="reach">Reach</label><input class="form-control" id="reach" type="number" min="0" value="10000"></div>
+<div class="field"><label for="leadRate">Lead rate %</label><input class="form-control" id="leadRate" type="number" min="0" max="100" step="0.1" value="3"></div>
+<div class="field"><label for="closeRate">Close rate %</label><input class="form-control" id="closeRate" type="number" min="0" max="100" step="0.1" value="10"></div>
+<div class="field"><label for="price">Offer price (₹)</label><input class="form-control" id="price" type="number" min="0" value="999"></div>
+</div>
+<div class="tool-result"><span>Estimated revenue</span><strong id="revenueResult">₹2,997</strong><small id="revenueMeta">300 leads · 30 customers</small></div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>UTM link builder</h2><p>Track which Reel, Story or campaign drives clicks.</p></div>
+<div class="field"><label for="baseUrl">Destination URL</label><input class="form-control" id="baseUrl" type="url" placeholder="https://example.com/offer"></div>
+<div class="tool-form-grid">
+<div class="field"><label for="campaign">Campaign</label><input class="form-control" id="campaign" placeholder="october-launch"></div>
+<div class="field"><label for="content">Content</label><input class="form-control" id="content" placeholder="reel-01"></div>
+</div>
+<button class="btn btn-accent" id="buildUtm" style="margin-top:14px">Build tracked link</button>
+<div class="tool-output" id="utmOutput">Your tracked link will appear here.</div>
+<button class="btn btn-ghost" id="copyUtm" disabled style="margin-top:10px">Copy link</button>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Offer CTA generator</h2><p>Create a comment-to-DM CTA for your Nudge automation.</p></div>
+<div class="field"><label for="offer">Offer</label><input class="form-control" id="offer" placeholder="30-minute fitness consultation"></div>
+<div class="field" style="margin-top:14px"><label for="keyword">Comment keyword</label><input class="form-control" id="keyword" value="INFO"></div>
+<button class="btn btn-accent" id="generateCta" style="margin-top:14px">Generate CTA</button>
+<div class="tool-output" id="ctaOutput">Example: Comment INFO and I'll send you the details.</div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Brand deal manager</h2><p>Keep sponsorships, deliverables, deadlines and payments in one place.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="dealBrand">Brand</label><input class="form-control" id="dealBrand" placeholder="Brand name"></div>
+<div class="field"><label for="dealAmount">Fee (₹)</label><input class="form-control" id="dealAmount" type="number" min="0" placeholder="25000"></div>
+<div class="field"><label for="dealDeliverables">Deliverables</label><input class="form-control" id="dealDeliverables" placeholder="1 Reel + 3 Stories"></div>
+<div class="field"><label for="dealDeadline">Deadline</label><input class="form-control" id="dealDeadline" type="date"></div>
+</div>
+<div class="field" style="margin-top:14px"><label for="dealStatus">Status</label><select class="form-control" id="dealStatus"><option>Lead</option><option>Negotiating</option><option>Confirmed</option><option>Content due</option><option>Awaiting payment</option><option>Paid</option><option>Completed</option></select></div>
+<button class="btn btn-accent" id="addDeal" style="margin-top:14px">Add brand deal</button>
+<div id="dealList" class="idea-list"></div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Brand deal rate card</h2><p>Create a transparent starting rate card. Estimates are planning inputs, not guaranteed market rates.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="rateReel">Reel (₹)</label><input class="form-control" id="rateReel" type="number" min="0" value="5000"></div>
+<div class="field"><label for="rateStory">Story (₹)</label><input class="form-control" id="rateStory" type="number" min="0" value="2500"></div>
+<div class="field"><label for="rateCarousel">Carousel (₹)</label><input class="form-control" id="rateCarousel" type="number" min="0" value="3500"></div>
+<div class="field"><label for="rateUgc">UGC video (₹)</label><input class="form-control" id="rateUgc" type="number" min="0" value="7500"></div>
+</div>
+<button class="btn btn-accent" id="saveRateCard" style="margin-top:14px">Save rate card</button>
+<div class="tool-output" id="rateCardOutput">Your saved rate card will appear here.</div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Media kit builder</h2><p>Build a clean creator profile you can print or save as PDF from your browser.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="mediaName">Creator name</label><input class="form-control" id="mediaName" placeholder="Your name"></div>
+<div class="field"><label for="mediaHandle">Instagram handle</label><input class="form-control" id="mediaHandle" placeholder="@yourhandle"></div>
+<div class="field"><label for="mediaNiche">Niche</label><input class="form-control" id="mediaNiche" placeholder="Tech & AI"></div>
+<div class="field"><label for="mediaFollowers">Followers</label><input class="form-control" id="mediaFollowers" type="number" min="0" placeholder="25000"></div>
+<div class="field"><label for="mediaEngagement">Engagement %</label><input class="form-control" id="mediaEngagement" type="number" min="0" step="0.1" placeholder="4.2"></div>
+<div class="field"><label for="mediaAvgViews">Average Reel views</label><input class="form-control" id="mediaAvgViews" type="number" min="0" placeholder="12000"></div>
+</div>
+<div class="field" style="margin-top:14px"><label for="mediaBio">About / audience</label><textarea class="form-control" id="mediaBio" rows="3" placeholder="Who you create for and what makes your audience valuable."></textarea></div>
+<div class="field" style="margin-top:14px"><label for="mediaContact">Business email</label><input class="form-control" id="mediaContact" type="email" placeholder="you@example.com"></div>
+<div id="mediaKitPreview" class="media-kit-preview"></div>
+<button class="btn btn-accent" id="printMediaKit" style="margin-top:14px">Print / Save as PDF</button>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Affiliate earnings tracker</h2><p>Track clicks, conversions and commissions from affiliate links.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="affProduct">Product / offer</label><input class="form-control" id="affProduct" placeholder="AI course"></div>
+<div class="field"><label for="affNetwork">Network</label><input class="form-control" id="affNetwork" placeholder="Amazon / Impact / direct"></div>
+<div class="field"><label for="affClicks">Clicks</label><input class="form-control" id="affClicks" type="number" min="0" value="0"></div>
+<div class="field"><label for="affConversions">Conversions</label><input class="form-control" id="affConversions" type="number" min="0" value="0"></div>
+<div class="field"><label for="affCommission">Commission (₹)</label><input class="form-control" id="affCommission" type="number" min="0" value="0"></div>
+</div>
+<button class="btn btn-accent" id="addAffiliate" style="margin-top:14px">Add affiliate result</button>
+<div id="affiliateList" class="idea-list"></div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Collaboration manager</h2><p>Track creator collaborations and who owes what.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="collabPerson">Creator / partner</label><input class="form-control" id="collabPerson" placeholder="Creator name"></div>
+<div class="field"><label for="collabProject">Project</label><input class="form-control" id="collabProject" placeholder="Joint Reel"></div>
+<div class="field"><label for="collabDue">Due date</label><input class="form-control" id="collabDue" type="date"></div>
+<div class="field"><label for="collabStatus">Status</label><select class="form-control" id="collabStatus"><option>Idea</option><option>Contacted</option><option>Confirmed</option><option>In progress</option><option>Delivered</option></select></div>
+</div>
+<button class="btn btn-accent" id="addCollab" style="margin-top:14px">Add collaboration</button>
+<div id="collabList" class="idea-list"></div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Creator goal tracker</h2><p>Set measurable growth and business targets.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="goalName">Goal</label><input class="form-control" id="goalName" placeholder="Reach 50K followers"></div>
+<div class="field"><label for="goalTarget">Target</label><input class="form-control" id="goalTarget" type="number" min="1" value="50000"></div>
+<div class="field"><label for="goalCurrent">Current</label><input class="form-control" id="goalCurrent" type="number" min="0" value="0"></div>
+<div class="field"><label for="goalUnit">Unit</label><select class="form-control" id="goalUnit"><option>followers</option><option>views</option><option>₹ revenue</option><option>posts</option><option>leads</option></select></div>
+</div>
+<button class="btn btn-accent" id="addGoal" style="margin-top:14px">Add goal</button>
+<div id="goalList" class="idea-list"></div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Offer CTA generator</h2><p>Create a conversion CTA that connects directly to your Nudge comment automation.</p></div>
+<div class="field"><label for="offer2">Offer</label><input class="form-control" id="offer2" placeholder="Creator checklist"></div>
+<div class="field" style="margin-top:14px"><label for="keyword2">Keyword</label><input class="form-control" id="keyword2" value="INFO"></div>
+<button class="btn btn-accent" id="generateCta2" style="margin-top:14px">Generate CTA</button>
+<div class="tool-output" id="ctaOutput2">Comment INFO and I'll send you the details.</div>
+</section>
+
+<section class="activity-card creator-tool-card">
+<div class="card-heading"><h2>Brand deal quote calculator</h2><p>Use this as an internal planning estimate based on your inputs.</p></div>
+<div class="tool-form-grid">
+<div class="field"><label for="quoteFollowers">Followers</label><input class="form-control" id="quoteFollowers" type="number" min="0" value="10000"></div>
+<div class="field"><label for="quoteEngagement">Engagement %</label><input class="form-control" id="quoteEngagement" type="number" min="0" max="100" step="0.1" value="3"></div>
+<div class="field"><label for="quoteDeliverables">Deliverables</label><input class="form-control" id="quoteDeliverables" type="number" min="1" value="1"></div>
+<div class="field"><label for="quoteUsage">Usage rights %</label><input class="form-control" id="quoteUsage" type="number" min="0" max="200" value="20"></div>
+</div>
+<button class="btn btn-accent" id="calculateQuote" style="margin-top:14px">Estimate quote</button>
+<div class="tool-result"><span>Planning quote</span><strong id="quoteResult">₹1,200</strong><small>Adjust for scope, exclusivity and licensing.</small></div>
+</section>
+
 </div>
 </main>
 </div>
