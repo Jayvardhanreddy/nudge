@@ -70,8 +70,12 @@
     try {
       var response = await fetch('/api/me', { credentials: 'same-origin' });
       var data = await response.json().catch(function () { return {}; });
-      if (!response.ok) {
+      if (response.status === 401) {
         window.location.replace('login.html?tab=login');
+        return;
+      }
+      if (!response.ok) {
+        showError(data.error || 'Unable to verify your session right now. Please try again.');
         return;
       }
       var userName = document.getElementById('userName');
