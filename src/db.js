@@ -130,7 +130,8 @@ async function nextSequence(name) {
     { $inc: { value: 1 } },
     { upsert: true, returnDocument: 'after' }
   );
-  return result.value.value;
+  const document = result && result.value ? result.value : result;
+  return document.value;
 }
 
 async function run(sql, params = []) {
@@ -384,7 +385,8 @@ async function consumeRateLimit(key, windowMs, maxRequests) {
     { $inc: { count: 1 } },
     { returnDocument: 'after' }
   );
-  if (result && result.value) return result.value.count <= maxRequests;
+  const document = result && result.value ? result.value : result;
+  if (document) return document.count <= maxRequests;
   try {
     await rateLimits.insertOne({ _id: key, count: 1, expires_at: expiresAt });
     return true;
