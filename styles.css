@@ -672,3 +672,18 @@ code{color:#e7eaff!important;background:#171e2d!important}
   .hero-copy h1{font-size:clamp(2.25rem,11vw,3rem)}
   .oauth-btn{min-height:48px}
 }
+
+/* Creator Toolkit */
+.creator-tool-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.creator-tool-card{min-width:0}
+.tool-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:20px}
+.tool-result{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:14px;background:#0b1019;display:flex;flex-direction:column;gap:4px}
+.tool-result span,.tool-result small{color:var(--ink-soft)}
+.tool-result strong{font-family:var(--serif);font-size:2rem;color:#fff}
+.tool-output{margin-top:14px;padding:13px 14px;border:1px dashed var(--line-strong);border-radius:12px;background:#0b1019;color:#dfe4f2;word-break:break-word;min-height:48px}
+.idea-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.idea-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#0b1019}
+.idea-row span{color:#e8ebf4;min-width:0;overflow-wrap:anywhere}
+.idea-row .btn{padding:7px 11px;font-size:.75rem;flex:none}
+@media(max-width:800px){.creator-tool-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.tool-form-grid{grid-template-columns:1fr}}
