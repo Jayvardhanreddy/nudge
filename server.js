@@ -53,6 +53,26 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
+
+function requireSameOriginForStateChanges(request, response, next) {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return next();
+  if (request.path === '/instagram/webhook') return next();
+
+  const origin = request.get('origin');
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      if (originUrl.protocol !== request.protocol || originUrl.host !== request.get('host')) {
+        return response.status(403).json({ error: 'Cross-origin request blocked.' });
+      }
+    } catch {
+      return response.status(403).json({ error: 'Cross-origin request blocked.' });
+    }
+  }
+  return next();
+}
+
+app.use('/api', requireSameOriginForStateChanges);
 app.use(express.static(path.join(__dirname)));
 
 function validateCredentials(body, includeName) {
