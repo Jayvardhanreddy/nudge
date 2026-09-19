@@ -321,6 +321,10 @@ async function all(sql, params = []) {
     ]).toArray();
   }
 
+  if (normalized === 'select * from instagram_accounts where owner_user_id = ?') {
+    return instagramAccounts.find({ owner_user_id: params[0] }).toArray();
+  }
+
   if (normalized.includes('from instagram_accounts') && normalized.includes('select owner_user_id as owneruserid')) {
     return instagramAccounts.aggregate([{ $project: { _id: 0, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', username: 1, expiresAt: '$expires_at', connectedAt: '$connected_at' } }]).toArray();
   }
