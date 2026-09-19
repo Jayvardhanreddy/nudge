@@ -50,4 +50,23 @@ async function listUsers() {
   return db.all('SELECT id, name, email, created_at AS createdAt FROM users ORDER BY created_at DESC');
 }
 
-module.exports = { register, authenticate, createToken, getUserById, listUsers };
+async function registerOAuthUser({ name, email }) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) throw Object.assign(new Error('Google did not return an email address.'), { statusCode: 400 });
+  const existing = await db.get('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+  if (existing) return publicUser(existing);
+  const user = {
+    id: crypto.randomUUID(),
+    name: String(name || 'Nudge Creator').trim().slice(0, 100),
+    email: normalizedEmail,
+    passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12),
+    createdAt: new Date().toISOString()
+  };
+  await db.run(
+    'INSERT INTO users (id, name, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)',
+    [user.id, user.name, user.email, user.passwordHash, user.createdAt]
+  );
+  return publicUser(user);
+}
+
+module.exports = { register, authenticate, registerOAuthUser, createToken, getUserById, listUsers };
