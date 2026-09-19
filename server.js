@@ -85,6 +85,16 @@ async function requireAuth(request, response, next) {
   }
 }
 
+function parseAutomationId(value) {
+  const raw = String(value ?? '').trim();
+  if (/^\d+$/.test(raw)) {
+    const numeric = Number(raw);
+    if (Number.isSafeInteger(numeric) && numeric > 0) return numeric;
+  }
+  if (/^[a-f0-9]{24}$/i.test(raw)) return raw;
+  return null;
+}
+
 function requireAdmin(request, response, next) {
   if (!process.env.ADMIN_EMAIL) {
     return response.status(503).json({ error: 'Admin access is not configured.' });
@@ -382,8 +392,8 @@ app.post('/api/automations', requireAuth, async (request, response, next) => {
 
 app.patch('/api/automations/:id', requireAuth, async (request, response, next) => {
   try {
-    const automationId = Number(request.params.id);
-    if (!Number.isInteger(automationId) || automationId <= 0) {
+    const automationId = parseAutomationId(request.params.id);
+    if (automationId === null) {
       return response.status(400).json({ error: 'Invalid automation ID.' });
     }
 
@@ -456,8 +466,8 @@ app.patch('/api/automations/:id', requireAuth, async (request, response, next) =
 
 app.delete('/api/automations/:id', requireAuth, async (request, response, next) => {
   try {
-    const automationId = Number(request.params.id);
-    if (!Number.isInteger(automationId) || automationId <= 0) {
+    const automationId = parseAutomationId(request.params.id);
+    if (automationId === null) {
       return response.status(400).json({ error: 'Invalid automation ID.' });
     }
 
