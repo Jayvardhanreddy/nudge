@@ -115,6 +115,58 @@ app.post('/api/auth/signup', async (request, response, next) => {
   }
 });
 
+
+app.get('/api/auth/google', (request, response) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'https://nudge-dto0.onrender.com/api/auth/google/callback';
+  if (!clientId) {
+    return response.redirect('/login.html?auth_error=' + encodeURIComponent('Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Render.'));
+  }
+  const state = jwt.sign({ nonce: crypto.randomBytes(16).toString('hex') }, process.env.JWT_SECRET, { expiresIn: '10m' });
+  const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  url.searchParams.set('client_id', clientId);
+  url.searchParams.set('redirect_uri', redirectUri);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('scope', 'openid email profile');
+  url.searchParams.set('state', state);
+  url.searchParams.set('prompt', 'select_account');
+  return response.redirect(url.toString());
+});
+
+app.get('/api/auth/google/callback', async (request, response) => {
+  const fail = (message) => response.redirect('/login.html?auth_error=' + encodeURIComponent(message));
+  try {
+    if (typeof request.query.code !== 'string' || typeof request.query.state !== 'string') return fail('Google sign-in was cancelled or did not return a valid code.');
+    jwt.verify(request.query.state, process.env.JWT_SECRET);
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) return fail('Google sign-in is not configured on the server.');
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'https://nudge-dto0.onrender.com/api/auth/google/callback';
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: request.query.code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+      })
+    });
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok || !tokenData.id_token) return fail('Google sign-in could not be completed.');
+    const profileResponse = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(tokenData.id_token));
+    const profile = await profileResponse.json();
+    if (!profileResponse.ok || profile.aud !== process.env.GOOGLE_CLIENT_ID || profile.email_verified !== 'true' || !profile.email) {
+      return fail('Google account verification failed.');
+    }
+    const user = await authService.registerOAuthUser({ name: profile.name || profile.email.split('@')[0], email: profile.email });
+    setAuthCookie(response, user);
+    return response.redirect('/dashboard.html');
+  } catch (error) {
+    console.error('Google OAuth callback failed:', error.message);
+    return fail('Google sign-in could not be completed. Please try again.');
+  }
+});
+
 app.post('/api/auth/login', loginRateLimit, async (request, response, next) => {
   try {
     const validationError = validateCredentials(request.body, false);
