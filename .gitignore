@@ -6,3 +6,7 @@ data/nudge.sqlite
 data/nudge.sqlite-shm
 data/nudge.sqlite-wal
 npm-debug.log*
+
+.env.*
+!.env.example
+*.log
