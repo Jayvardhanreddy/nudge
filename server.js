@@ -615,7 +615,7 @@ app.post('/api/instagram/webhook', async (request, response) => {
           if (keywordMatches(commentText, auto.keyword)) {
             console.log(`Comment keyword "${auto.keyword}" matched for comment ID ${commentId}. Sending private reply.`);
             try {
-              const tokenData = await instagramService.getDecryptedTokenByInstagramUserId(recipientIgUserId);
+              const tokenData = await instagramService.getDecryptedTokenByInstagramUserId(recipientIgUserId, auto.owner_user_id);
               await instagramService.sendPrivateReply(
                 recipientIgUserId,
                 commentId,
