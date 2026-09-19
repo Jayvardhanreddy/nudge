@@ -47,6 +47,25 @@
     setTimeout(function () { noticeBox.hidden = true; }, 4000);
   }
 
+  async function loadDashboardOverview() {
+    if (document.body.getAttribute('data-page') !== 'dashboard') return;
+    try {
+      var response = await fetch('/api/analytics/overview', { credentials: 'same-origin' });
+      var data = await response.json().catch(function(){ return {}; });
+      if (!response.ok) return;
+      var cards = document.querySelectorAll('.overview-card strong');
+      if (cards[0]) cards[0].textContent = data.accounts;
+      if (cards[1]) cards[1].textContent = data.activeAutomations;
+      if (cards[2]) cards[2].textContent = data.messagesSent;
+      if (cards[3]) cards[3].textContent = data.comments;
+      var notes = document.querySelectorAll('.overview-card .overview-note');
+      if (notes[0]) notes[0].textContent = data.accounts === 1 ? '1 account connected' : data.accounts + ' accounts connected';
+      if (notes[1]) notes[1].textContent = data.activeAutomations === 1 ? '1 automation active' : data.activeAutomations + ' automations active';
+      if (notes[2]) notes[2].textContent = data.messagesFailed ? data.messagesFailed + ' failed replies' : 'No failed replies';
+      if (notes[3]) notes[3].textContent = data.comments ? 'Live webhook activity tracked' : 'No activity yet';
+    } catch (e) {}
+  }
+
   async function loadUser() {
     try {
       var response = await fetch('/api/me', { credentials: 'same-origin' });
@@ -388,6 +407,7 @@
     if (connectedNotice) connectedNotice.hidden = false;
   }
   loadUser();
+  loadDashboardOverview();
   loadAccounts();
   loadAutomationsPage();
 })();
