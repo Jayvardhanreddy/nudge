@@ -473,9 +473,11 @@ app.post('/api/instagram/webhook', async (request, response) => {
                 auto.dm_message,
                 tokenData.accessToken
               );
-              await db.run('INSERT INTO automation_events (owner_user_id, instagram_user_id, automation_id, comment_id, event_type, keyword, message_text, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [auto.owner_user_id, recipientIgUserId, auto.id, commentId, 'private_reply', auto.keyword, auto.dm_message, 'success', new Date().toISOString()]);\n              console.log(`Private reply successfully sent for comment ID ${commentId}.`);
+              await db.run('INSERT INTO automation_events (owner_user_id, instagram_user_id, automation_id, comment_id, event_type, keyword, message_text, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [auto.owner_user_id, recipientIgUserId, auto.id, commentId, 'private_reply', auto.keyword, auto.dm_message, 'success', new Date().toISOString()]);
+              console.log(`Private reply successfully sent for comment ID ${commentId}.`);
             } catch (apiErr) {
-              await db.run('INSERT INTO automation_events (owner_user_id, instagram_user_id, automation_id, comment_id, event_type, keyword, message_text, status, error_message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [auto.owner_user_id, recipientIgUserId, auto.id, commentId, 'private_reply', auto.keyword, auto.dm_message, 'failed', apiErr.message, new Date().toISOString()]);\n              console.error(`Failed to send private reply for comment ID ${commentId}:`, apiErr.message);
+              await db.run('INSERT INTO automation_events (owner_user_id, instagram_user_id, automation_id, comment_id, event_type, keyword, message_text, status, error_message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [auto.owner_user_id, recipientIgUserId, auto.id, commentId, 'private_reply', auto.keyword, auto.dm_message, 'failed', apiErr.message, new Date().toISOString()]);
+              console.error(`Failed to send private reply for comment ID ${commentId}:`, apiErr.message);
             }
           }
         }
