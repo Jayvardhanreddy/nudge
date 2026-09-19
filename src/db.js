@@ -16,7 +16,8 @@ function collections() {
     automations: database.collection('automations'),
     webhookEvents: database.collection('webhook_events'),
     automationEvents: database.collection('automation_events'),
-    counters: database.collection('counters')
+    counters: database.collection('counters'),
+    rateLimits: database.collection('rate_limits')
   };
 }
 
@@ -104,7 +105,7 @@ async function initialize() {
   database = client.db(databaseName);
   await database.command({ ping: 1 });
 
-  const { users, instagramAccounts, automations, webhookEvents, automationEvents, counters } = collections();
+  const { users, instagramAccounts, automations, webhookEvents, automationEvents, counters, rateLimits } = collections();
 
   await Promise.all([
     users.createIndex({ email: 1 }, { unique: true, name: 'users_email_unique' }),
@@ -115,6 +116,7 @@ async function initialize() {
     webhookEvents.createIndex({ event_id: 1 }, { unique: true, name: 'webhook_event_unique' }),
     automationEvents.createIndex({ owner_user_id: 1, created_at: -1 }, { name: 'automation_events_owner_created' }),
     automationEvents.createIndex({ instagram_user_id: 1, created_at: -1 }, { name: 'automation_events_instagram_created' }),
+    rateLimits.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'rate_limits_ttl' }),
   ]);
 
   await migrateJsonData();
@@ -373,8 +375,27 @@ async function all(sql, params = []) {
   throw new Error(`Unsupported database list operation: ${sql}`);
 }
 
+async function consumeRateLimit(key, windowMs, maxRequests) {
+  const { rateLimits } = collections();
+  const now = Date.now();
+  const expiresAt = new Date(now + windowMs);
+  const result = await rateLimits.findOneAndUpdate(
+    { _id: key, expires_at: { $gt: new Date(now) } },
+    { $inc: { count: 1 } },
+    { returnDocument: 'after' }
+  );
+  if (result && result.value) return result.value.count <= maxRequests;
+  try {
+    await rateLimits.insertOne({ _id: key, count: 1, expires_at: expiresAt });
+    return true;
+  } catch (error) {
+    if (error && error.code === 11000) return false;
+    throw error;
+  }
+}
+
 async function close() {
   if (client) await client.close();
 }
 
-module.exports = { initialize, run, get, all, close };
+module.exports = { initialize, run, get, all, close, consumeRateLimit };
