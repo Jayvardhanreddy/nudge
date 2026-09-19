@@ -125,7 +125,7 @@
         body: JSON.stringify(payload)
       });
     } catch (error) {
-      throw new Error('Unable to reach the authentication server. Open the app at http://localhost:3000.');
+      throw new Error('Unable to reach the authentication server. Please check your internet connection and try again.');
     }
     var data = await response.json().catch(function () { return {}; });
     if (!response.ok) throw new Error(data.error || 'Unable to complete the request.');
