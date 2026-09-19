@@ -52,10 +52,13 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error('JWT_SECRET must be set to a random value of at least 32 characters.');
 }
 
+// Parse authentication cookies before billing routes so subscription endpoints can
+// identify the logged-in user. Keep this before billing.register(); the billing webhook
+// still needs its own raw-body parser and is registered before express.json().
+app.use(cookieParser());
 billing.register(app);
 
 app.use(express.json({ limit: '10kb' }));
-app.use(cookieParser());
 billing.registerPostParser(app);
 function requireSameOriginForStateChanges(request, response, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return next();
