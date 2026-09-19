@@ -243,7 +243,7 @@ async function run(sql, params = []) {
 
 async function get(sql, params = []) {
   const normalized = sql.replace(/\s+/g, ' ').trim().toLowerCase();
-  const { users, instagramAccounts, automations, webhookEvents } = collections();
+  const { users, instagramAccounts, automations, webhookEvents, automationEvents } = collections();
 
   if (normalized.startsWith('select count(*) as count from users')) {
     return { count: await users.countDocuments() };
