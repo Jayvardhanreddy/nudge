@@ -64,28 +64,40 @@ function requireSameOriginForStateChanges(request, response, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return next();
   if (request.path === '/instagram/webhook') return next();
 
-  const origin = request.get('origin');
-  if (!origin) return next();
-
-  try {
-    const originUrl = new URL(origin);
-    const requestHost = request.get('host');
-    const expectedProtocol = isProduction ? 'https:' : request.protocol + ':';
-
-    // Render terminates HTTPS at its proxy and forwards the request to Express over HTTP.
-    // Do not compare Origin's protocol directly with request.protocol.
-    // For this single-origin app, the browser origin must use the same host and HTTPS in production.
-    const sameHost = originUrl.host === requestHost;
-    const allowedProtocol = originUrl.protocol === expectedProtocol;
-
-    if (!sameHost || !allowedProtocol) {
-      return response.status(403).json({ error: 'Cross-origin request blocked.' });
-    }
-  } catch {
+  const fetchSite = request.get('sec-fetch-site');
+  if (fetchSite === 'cross-site') {
     return response.status(403).json({ error: 'Cross-origin request blocked.' });
   }
 
-  return next();
+  const requestHost = request.get('host');
+  const expectedProtocol = isProduction ? 'https:' : request.protocol + ':';
+  const origin = request.get('origin');
+
+  function matchesTarget(value) {
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === expectedProtocol && parsed.host === requestHost;
+    } catch {
+      return false;
+    }
+  }
+
+  if (origin) {
+    return matchesTarget(origin)
+      ? next()
+      : response.status(403).json({ error: 'Cross-origin request blocked.' });
+  }
+
+  const referer = request.get('referer');
+  if (referer) {
+    return matchesTarget(referer)
+      ? next()
+      : response.status(403).json({ error: 'Cross-origin request blocked.' });
+  }
+
+  // Browser state-changing requests should provide Origin or Referer.
+  // Rejecting when neither is present closes the remaining CSRF gap.
+  return response.status(403).json({ error: 'Cross-origin request blocked.' });
 }
 
 app.use('/api', requireSameOriginForStateChanges);
