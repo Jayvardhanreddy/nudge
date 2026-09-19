@@ -358,7 +358,7 @@ async function all(sql, params = []) {
       { $sort: { created_at: -1 } },
       { $lookup: { from: 'instagram_accounts', let: { owner: '$owner_user_id', ig: '$instagram_user_id' }, pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$owner_user_id', '$$owner'] }, { $eq: ['$instagram_user_id', '$$ig'] }] } } }, { $project: { _id: 0, username: 1 } }], as: 'account' } },
       { $set: { username: { $ifNull: [{ $arrayElemAt: ['$account.username', 0] }, null] } } },
-      { $project: { _id: 0, id: 1, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', keyword: 1, dmMessage: '$dm_message', enabled: 1, createdAt: '$created_at', updatedAt: '$updated_at', username: 1 } }
+      { $project: { _id: 0, id: { $ifNull: ['$id', { $toString: '$_id' }] }, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', keyword: 1, dmMessage: '$dm_message', enabled: 1, createdAt: '$created_at', updatedAt: '$updated_at', username: 1 } }
     ]).toArray();
   }
 
