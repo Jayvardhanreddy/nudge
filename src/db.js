@@ -203,8 +203,10 @@ async function run(sql, params = []) {
 
   if (normalized.startsWith('update automations set')) {
     const [instagramUserId, keyword, dmMessage, enabled, updatedAt, id, ownerUserId] = params;
+    const idFilter = automationIdFilter(id);
+    if (!idFilter) return { changes: 0 };
     const result = await automations.updateOne(
-      { id, owner_user_id: ownerUserId },
+      { ...idFilter, owner_user_id: ownerUserId },
       { $set: { instagram_user_id: instagramUserId, keyword, dm_message: dmMessage, enabled: Number(enabled), updated_at: updatedAt } }
     );
     return { changes: result.modifiedCount };
@@ -212,7 +214,9 @@ async function run(sql, params = []) {
 
   if (normalized.startsWith('delete from automations')) {
     const [id, ownerUserId] = params;
-    const result = await automations.deleteOne({ id, owner_user_id: ownerUserId });
+    const idFilter = automationIdFilter(id);
+    if (!idFilter) return { changes: 0 };
+    const result = await automations.deleteOne({ ...idFilter, owner_user_id: ownerUserId });
     return { changes: result.deletedCount };
   }
 
@@ -293,7 +297,9 @@ async function get(sql, params = []) {
   }
 
   if (normalized === 'select * from automations where id = ? and owner_user_id = ?') {
-    return automations.findOne({ id: Number(params[0]), owner_user_id: params[1] });
+    const idFilter = automationIdFilter(params[0]);
+    if (!idFilter) return null;
+    return automations.findOne({ ...idFilter, owner_user_id: params[1] });
   }
 
   if (normalized === 'select event_id from webhook_events where event_id = ?') {
