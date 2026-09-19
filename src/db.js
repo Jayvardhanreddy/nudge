@@ -316,8 +316,10 @@ async function all(sql, params = []) {
   const { users, instagramAccounts, automations, automationEvents } = collections();
 
   if (normalized.startsWith('select id, name, email, created_at as createdat from users')) {
-    return users.find({}, { projection: { _id: 0, id: 1, name: 1, email: 1, createdAt: '$created_at' } })
-      .sort({ created_at: -1 }).toArray();
+    return users.aggregate([
+      { $sort: { created_at: -1 } },
+      { $project: { _id: 0, id: 1, name: 1, email: 1, createdAt: '$created_at' } }
+    ]).toArray();
   }
 
   if (normalized.includes('from instagram_accounts') && normalized.includes('select owner_user_id as owneruserid')) {
