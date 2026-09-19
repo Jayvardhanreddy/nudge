@@ -41,7 +41,7 @@ function createToken(user) {
   return require('jsonwebtoken').sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 }
 
-async function getUserById(id) {
+async function getUserByEmail(email) {\n  const user = await db.get('SELECT * FROM users WHERE email = ?', [String(email).trim().toLowerCase()]);\n  return user ? publicUser(user) : null;\n}\n\nasync function getUserById(id) {
   const user = await db.get('SELECT * FROM users WHERE id = ?', [id]);
   return user ? publicUser(user) : null;
 }
@@ -69,4 +69,4 @@ async function registerOAuthUser({ name, email }) {
   return publicUser(user);
 }
 
-module.exports = { register, authenticate, registerOAuthUser, createToken, getUserById, listUsers };
+module.exports = { register, authenticate, registerOAuthUser, createToken, getUserById, getUserByEmail, listUsers };
