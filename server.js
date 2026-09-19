@@ -306,8 +306,22 @@ app.get('/api/settings', requireAuth, async (request, response, next) => {
 app.patch('/api/settings', requireAuth, async (request, response, next) => {
   try {
     const name = typeof request.body?.name === 'string' ? request.body.name.trim() : request.user.name;
-    if (name.length < 2 || name.length > 100) return response.status(400).json({ error: 'Name must be between 2 and 100 characters.' });
-    await db.run('UPDATE users SET name = ? WHERE id = ?', [name, request.user.id]);
+    const email = typeof request.body?.email === 'string'
+      ? request.body.email.trim().toLowerCase()
+      : request.user.email;
+    if (name.length < 2 || name.length > 100) {
+      return response.status(400).json({ error: 'Name must be between 2 and 100 characters.' });
+    }
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) {
+      return response.status(400).json({ error: 'Enter a valid email address.' });
+    }
+    if (email !== request.user.email) {
+      const existing = await authService.getUserByEmail(email);
+      if (existing && existing.id !== request.user.id) {
+        return response.status(409).json({ error: 'An account with that email already exists.' });
+      }
+    }
+    await db.run('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, request.user.id]);
     return response.json({ user: await authService.getUserById(request.user.id) });
   } catch (error) { return next(error); }
 });
