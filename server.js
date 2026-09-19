@@ -27,23 +27,19 @@ app.use((request, response, next) => {
 });
 
 const loginAttempts = new Map();
-function loginRateLimit(request, response, next) {
-  const key = request.ip || request.socket.remoteAddress || 'unknown';
-  const now = Date.now();
-  const windowMs = 15 * 60 * 1000;
-  const maxAttempts = 10;
-  const current = loginAttempts.get(key);
-  if (!current || now - current.startedAt >= windowMs) {
-    loginAttempts.set(key, { startedAt: now, count: 1 });
+async function loginRateLimit(request, response, next) {
+  try {
+    const ip = request.ip || request.socket.remoteAddress || 'unknown';
+    const allowed = await db.consumeRateLimit(`login:${ip}`, 15 * 60 * 1000, 10);
+    if (!allowed) {
+      response.setHeader('Retry-After', '900');
+      return response.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+    }
     return next();
+  } catch (error) {
+    console.error('Login rate limiter error:', error.message);
+    return response.status(503).json({ error: 'Authentication is temporarily unavailable. Please try again shortly.' });
   }
-  if (current.count >= maxAttempts) {
-    const retryAfter = Math.ceil((windowMs - (now - current.startedAt)) / 1000);
-    response.setHeader('Retry-After', String(retryAfter));
-    return response.status(429).json({ error: 'Too many login attempts. Please try again later.' });
-  }
-  current.count += 1;
-  return next();
 }
 
 
@@ -573,6 +569,68 @@ app.post('/api/instagram/webhook', async (request, response) => {
     }
   } catch (err) {
     console.error('Error processing Instagram webhook payload:', err.message);
+  }
+});
+
+
+// ============================================================
+// Support Help Desk
+// ============================================================
+const supportKnowledge = [
+  { keys: ['login', 'sign in', 'password'], answer: 'For login issues, use your email and password on the login page. If you use Google, complete the Google OAuth setup first. If you forgot your password, contact nudge.support360@gmail.com because password reset is not yet automated.' },
+  { keys: ['instagram', 'connect', 'oauth'], answer: 'Connect Instagram from your Nudge dashboard using Meta authorization. Nudge never needs your Instagram password. If authorization returns an error, verify the Meta app redirect URI and required permissions.' },
+  { keys: ['comment', 'keyword', 'automation'], answer: 'Create an automation, select your connected Instagram account, enter a keyword, write the private reply, and enable it. A matching Instagram comment is then processed through the webhook flow.' },
+  { keys: ['dm', 'private reply', 'message'], answer: 'Private replies depend on Meta permissions, account eligibility, webhook delivery, and Instagram API limits. If an automation matches but no DM is sent, check the Nudge event log and Render logs for the Meta API error.' },
+  { keys: ['creator toolkit', 'media kit', 'brand deal', 'utm', 'calendar'], answer: 'Creator Toolkit includes content planning, hooks/captions, reel scripts, repurposing, hashtags, idea banking, revenue calculations, UTM links, brand deals, rate cards, media kits, affiliate tracking, collaborations and goals. Toolkit data is stored locally in your browser.' },
+  { keys: ['privacy', 'delete', 'data'], answer: 'Nudge provides Privacy Policy and Terms pages. For account or data-deletion requests, contact nudge.support360@gmail.com with the account email and request.' },
+  { keys: ['support', 'contact', 'human'], answer: 'You can escalate to nudge.support360@gmail.com. Include the page, action, exact error message, and approximate time so the issue can be investigated.' }
+];
+
+function localSupportAnswer(message) {
+  const text = String(message || '').toLowerCase();
+  const match = supportKnowledge.find((item) => item.keys.some((key) => text.includes(key)));
+  return match ? match.answer : 'I can help with Nudge login, Instagram connection, automations, private replies, Creator Toolkit, privacy, and troubleshooting. Tell me what you are trying to do and what happened.';
+}
+
+app.post('/api/support/chat', async (request, response) => {
+  const message = typeof request.body?.message === 'string' ? request.body.message.trim() : '';
+  if (!message || message.length > 1000) return response.status(400).json({ error: 'Enter a message between 1 and 1000 characters.' });
+
+  try {
+    const ip = request.ip || request.socket.remoteAddress || 'unknown';
+    if (!(await db.consumeRateLimit(`support:${ip}`, 60 * 1000, 20))) {
+      response.setHeader('Retry-After', '60');
+      return response.status(429).json({ error: 'Too many support requests. Please wait a minute and try again.' });
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) return response.json({ reply: localSupportAnswer(message), mode: 'built-in' });
+
+    const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
+    const aiResponse = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        input: [
+          { role: 'system', content: 'You are Nudge Help Desk. Give concise, factual support for the Nudge web app. Do not invent features, guarantees, Meta policy approvals, account outcomes, or legal advice. If the issue requires account access or a human, direct the user to nudge.support360@gmail.com. Never request passwords, API keys, access tokens, client secrets, or other secrets.' },
+          { role: 'user', content: message }
+        ],
+        max_output_tokens: 350
+      })
+    });
+    const data = await aiResponse.json().catch(() => ({}));
+    if (!aiResponse.ok) {
+      console.error('Support AI request failed:', aiResponse.status, data?.error?.message || 'unknown error');
+      return response.json({ reply: localSupportAnswer(message), mode: 'built-in-fallback' });
+    }
+    const output = Array.isArray(data.output)
+      ? data.output.flatMap((item) => Array.isArray(item.content) ? item.content : []).map((item) => item.text || '').filter(Boolean).join('\n').trim()
+      : '';
+    return response.json({ reply: output || localSupportAnswer(message), mode: output ? 'ai' : 'built-in-fallback' });
+  } catch (error) {
+    console.error('Support chat error:', error.message);
+    return response.status(500).json({ error: 'Support chat is temporarily unavailable. Please email nudge.support360@gmail.com.' });
   }
 });
 
