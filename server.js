@@ -168,6 +168,56 @@ app.delete('/api/instagram/accounts/:instagramUserId', requireAuth, async (reque
   }
 });
 
+app.get('/api/analytics/overview', requireAuth, async (request, response, next) => {
+  try {
+    const ownerId = request.user.id;
+    const [accounts, activeAutomations, totals, recent, daily] = await Promise.all([
+      db.get('SELECT COUNT(*) AS count FROM instagram_accounts WHERE owner_user_id = ?', [ownerId]),
+      db.get('SELECT COUNT(*) AS count FROM automations WHERE owner_user_id = ? AND enabled = 1', [ownerId]),
+      db.get(`SELECT
+        SUM(CASE WHEN event_type = 'comment_received' THEN 1 ELSE 0 END) AS comments,
+        SUM(CASE WHEN event_type = 'private_reply' AND status = 'success' THEN 1 ELSE 0 END) AS messagesSent,
+        SUM(CASE WHEN event_type = 'private_reply' AND status = 'failed' THEN 1 ELSE 0 END) AS messagesFailed,
+        SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS successfulEvents
+        FROM automation_events WHERE owner_user_id = ?`, [ownerId]),
+      db.all(`SELECT event_type AS eventType, status, keyword, message_text AS messageText, error_message AS errorMessage, created_at AS createdAt
+        FROM automation_events WHERE owner_user_id = ? ORDER BY created_at DESC LIMIT 20`, [ownerId]),
+      db.all(`SELECT substr(created_at,1,10) AS date,
+        SUM(CASE WHEN event_type = 'comment_received' THEN 1 ELSE 0 END) AS comments,
+        SUM(CASE WHEN event_type = 'private_reply' AND status = 'success' THEN 1 ELSE 0 END) AS messagesSent,
+        SUM(CASE WHEN event_type = 'private_reply' AND status = 'failed' THEN 1 ELSE 0 END) AS messagesFailed
+        FROM automation_events WHERE owner_user_id = ? AND created_at >= datetime('now','-29 days')
+        GROUP BY substr(created_at,1,10) ORDER BY date ASC`, [ownerId])
+    ]);
+    return response.json({
+      accounts: accounts.count,
+      activeAutomations: activeAutomations.count,
+      comments: Number(totals?.comments || 0),
+      messagesSent: Number(totals?.messagesSent || 0),
+      messagesFailed: Number(totals?.messagesFailed || 0),
+      successfulEvents: Number(totals?.successfulEvents || 0),
+      recent,
+      daily
+    });
+  } catch (error) { return next(error); }
+});
+
+app.get('/api/settings', requireAuth, async (request, response, next) => {
+  try {
+    const user = await authService.getUserById(request.user.id);
+    return response.json({ user, preferences: { notifications: true, emailReports: false } });
+  } catch (error) { return next(error); }
+});
+
+app.patch('/api/settings', requireAuth, async (request, response, next) => {
+  try {
+    const name = typeof request.body?.name === 'string' ? request.body.name.trim() : request.user.name;
+    if (name.length < 2 || name.length > 100) return response.status(400).json({ error: 'Name must be between 2 and 100 characters.' });
+    await db.run('UPDATE users SET name = ? WHERE id = ?', [name, request.user.id]);
+    return response.json({ user: await authService.getUserById(request.user.id) });
+  } catch (error) { return next(error); }
+});
+
 app.get('/api/admin/overview', requireAuth, requireAdmin, async (request, response, next) => {
   try {
     const users = await authService.listUsers();
@@ -423,9 +473,9 @@ app.post('/api/instagram/webhook', async (request, response) => {
                 auto.dm_message,
                 tokenData.accessToken
               );
-              console.log(`Private reply successfully sent for comment ID ${commentId}.`);
+              await db.run('INSERT INTO automation_events (owner_user_id, instagram_user_id, automation_id, comment_id, event_type, keyword, message_text, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [auto.owner_user_id, recipientIgUserId, auto.id, commentId, 'private_reply', auto.keyword, auto.dm_message, 'success', new Date().toISOString()]);\n              console.log(`Private reply successfully sent for comment ID ${commentId}.`);
             } catch (apiErr) {
-              console.error(`Failed to send private reply for comment ID ${commentId}:`, apiErr.message);
+              await db.run('INSERT INTO automation_events (owner_user_id, instagram_user_id, automation_id, comment_id, event_type, keyword, message_text, status, error_message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [auto.owner_user_id, recipientIgUserId, auto.id, commentId, 'private_reply', auto.keyword, auto.dm_message, 'failed', apiErr.message, new Date().toISOString()]);\n              console.error(`Failed to send private reply for comment ID ${commentId}:`, apiErr.message);
             }
           }
         }
