@@ -56,6 +56,8 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 // identify the logged-in user. Keep this before billing.register(); the billing webhook
 // still needs its own raw-body parser and is registered before express.json().
 app.use(cookieParser());
+
+app.use('/api', requireSameOriginForStateChanges);
 billing.register(app);
 
 app.use(express.json({ limit: '10kb' }));
@@ -100,7 +102,6 @@ function requireSameOriginForStateChanges(request, response, next) {
   return response.status(403).json({ error: 'Cross-origin request blocked.' });
 }
 
-app.use('/api', requireSameOriginForStateChanges);
 app.use(express.static(path.join(__dirname)));
 
 function validateCredentials(body, includeName) {
