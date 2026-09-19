@@ -38,7 +38,7 @@ async function authenticate(email, password) {
 }
 
 function createToken(user) {
-  return require('jsonwebtoken').sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '7d', issuer: 'nudge-app', audience: 'nudge-web' });
+  return require('jsonwebtoken').sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '30d', issuer: 'nudge-app', audience: 'nudge-web' });
 }
 
 async function getUserByEmail(email) {
