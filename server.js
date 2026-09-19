@@ -101,6 +101,10 @@ function validateCredentials(body, includeName) {
   return null;
 }
 
+function verifyNudgeJwt(token) {
+  return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'], issuer: 'nudge-app', audience: 'nudge-web' });
+}
+
 function setAuthCookie(response, user) {
   response.cookie('nudge_token', authService.createToken(user), {
     httpOnly: true,
@@ -115,7 +119,7 @@ async function requireAuth(request, response, next) {
   const token = request.cookies.nudge_token;
   if (!token) return response.status(401).json({ error: 'Authentication required.' });
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = verifyNudgeJwt(token);
     const user = await authService.getUserById(payload.sub);
     if (!user) return response.status(401).json({ error: 'Authentication required.' });
     request.user = user;
@@ -168,7 +172,7 @@ app.get('/api/auth/google', (request, response) => {
   if (!clientId) {
     return response.redirect('/login.html?auth_error=' + encodeURIComponent('Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Render.'));
   }
-  const state = jwt.sign({ nonce: crypto.randomBytes(16).toString('hex') }, process.env.JWT_SECRET, { expiresIn: '10m' });
+  const state = jwt.sign({ nonce: crypto.randomBytes(16).toString('hex') }, process.env.JWT_SECRET, { expiresIn: '10m', issuer: 'nudge-app', audience: 'nudge-web' });
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   url.searchParams.set('client_id', clientId);
   url.searchParams.set('redirect_uri', redirectUri);
@@ -243,7 +247,7 @@ app.get('/api/instagram/authorize', requireAuth, (request, response, next) => {
     const state = jwt.sign(
       { sub: request.user.id, nonce: crypto.randomBytes(16).toString('hex') },
       process.env.JWT_SECRET,
-      { expiresIn: '10m' }
+      { expiresIn: '10m', issuer: 'nudge-app', audience: 'nudge-web' }
     );
     const authorizeUrl = new URL('https://www.instagram.com/oauth/authorize');
     authorizeUrl.searchParams.set('client_id', process.env.META_APP_ID);
