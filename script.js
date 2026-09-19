@@ -142,7 +142,7 @@
     }
     errorBox.classList.remove('show');
     submitAuth('/api/auth/login', { email: email, password: password })
-      .then(function () { window.location.href = 'dashboard.html'; })
+      .then(function () { var q = new URLSearchParams(window.location.search); window.location.href = q.get('connect') === 'instagram' ? '/api/instagram/authorize' : 'dashboard.html'; })
       .catch(function (error) { showError(error.message); });
   });
 
@@ -166,7 +166,49 @@
     }
     errorBox.classList.remove('show');
     submitAuth('/api/auth/signup', { name: name, email: email, password: password })
-      .then(function () { window.location.href = 'dashboard.html'; })
+      .then(function () { var q = new URLSearchParams(window.location.search); window.location.href = q.get('connect') === 'instagram' ? '/api/instagram/authorize' : 'dashboard.html'; })
       .catch(function (error) { showError(error.message); });
   });
+})();
+
+
+// ============================================================
+// OAuth buttons
+// ============================================================
+(function () {
+  var buttons = document.querySelectorAll('.oauth-btn');
+  if (!buttons.length) return;
+  var errorBox = document.getElementById('formError');
+  function showAuthError(message) {
+    if (!errorBox) return;
+    errorBox.textContent = message;
+    errorBox.classList.add('show');
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener('click', async function () {
+      var label = (button.textContent || '').toLowerCase();
+      button.disabled = true;
+      try {
+        if (label.indexOf('google') !== -1) {
+          window.location.href = '/api/auth/google';
+          return;
+        }
+        var session = await fetch('/api/me', { credentials: 'same-origin' });
+        if (session.ok) {
+          window.location.href = '/api/instagram/authorize';
+          return;
+        }
+        var url = new URL(window.location.href);
+        url.searchParams.set('tab', 'signup');
+        url.searchParams.set('connect', 'instagram');
+        window.location.href = url.toString();
+      } catch (error) {
+        showAuthError('Unable to start the sign-in flow. Please try again.');
+        button.disabled = false;
+      }
+    });
+  });
+  var params = new URLSearchParams(window.location.search);
+  var authError = params.get('auth_error');
+  if (authError) showAuthError(authError);
 })();
