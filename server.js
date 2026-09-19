@@ -25,7 +25,7 @@ app.use((request, response, next) => {
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
   response.setHeader('X-DNS-Prefetch-Control', 'off');
-  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.openai.com https://api.instagram.com https://graph.instagram.com https://graph.facebook.com https://oauth2.googleapis.com; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';");
+  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.openai.com https://api.instagram.com https://graph.instagram.com https://graph.facebook.com https://oauth2.googleapis.com https://api.razorpay.com https://checkout.razorpay.com; frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';");
   if (isProduction) response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   if (request.path.startsWith('/api/')) response.setHeader('Cache-Control', 'no-store');
   next();
@@ -56,7 +56,7 @@ billing.register(app);
 
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
-
+billing.registerPostParser(app);
 function requireSameOriginForStateChanges(request, response, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return next();
   if (request.path === '/instagram/webhook') return next();
@@ -558,6 +558,7 @@ app.post('/api/instagram/webhook', async (request, response) => {
   response.status(200).json({ status: 'ok' });
 
   try {
+    if (request.nudgeBillingBlocked) return;
     const payload = request.body;
     if (!payload || payload.object !== 'instagram' || !Array.isArray(payload.entry)) {
       return;
