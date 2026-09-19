@@ -78,6 +78,24 @@ async function fetchProfile(accessToken) {
   return { userId: String(data.user_id), username: data.username || 'Instagram account' };
 }
 
+async function subscribeToWebhooks(instagramUserId, accessToken) {
+  const url = new URL(`https://graph.instagram.com/${apiVersion}/${instagramUserId}/subscribed_apps`);
+  url.searchParams.set('subscribed_fields', 'comments');
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success !== true) {
+    const error = new Error(data.error?.message || data.error_message || 'Unable to subscribe the Instagram account to comment webhooks.');
+    error.statusCode = response.status || 502;
+    error.metaError = data.error;
+    throw error;
+  }
+  console.log(`Instagram webhook subscription succeeded for account ${instagramUserId}.`);
+  return data;
+}
+
 async function saveAccount(userId, profile, token) {
   const encrypted = encryptToken(token.accessToken);
   await db.run(
@@ -89,6 +107,7 @@ async function saveAccount(userId, profile, token) {
     tag=excluded.tag, expires_at=excluded.expires_at, connected_at=excluded.connected_at`,
     [userId, profile.userId, profile.username, encrypted.ciphertext, encrypted.iv, encrypted.tag, Date.now() + token.expiresIn * 1000, new Date().toISOString()]
   );
+  await subscribeToWebhooks(profile.userId, token.accessToken);
 }
 
 async function listAccounts(userId) {
@@ -97,10 +116,7 @@ async function listAccounts(userId) {
 }
 
 async function disconnect(userId, instagramUserId) {
-  const result = await db.run(
-    'DELETE FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
-    [userId, instagramUserId]
-  );
+  const result = await db.run('DELETE FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [userId, instagramUserId]);
   if (!result.changes) {
     const error = new Error('Instagram account not found.');
     error.statusCode = 404;
@@ -115,21 +131,14 @@ async function listAllAccounts() {
 
 function decryptToken(ciphertext, iv, tag) {
   ensureConfiguration();
-  const decipher = crypto.createDecipheriv(
-    'aes-256-gcm',
-    Buffer.from(process.env.META_TOKEN_ENCRYPTION_KEY, 'hex'),
-    Buffer.from(iv, 'base64')
-  );
+  const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(process.env.META_TOKEN_ENCRYPTION_KEY, 'hex'), Buffer.from(iv, 'base64'));
   decipher.setAuthTag(Buffer.from(tag, 'base64'));
   const decrypted = Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64')), decipher.final()]);
   return decrypted.toString('utf8');
 }
 
 async function getAccount(ownerUserId, instagramUserId) {
-  return db.get(
-    'SELECT * FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
-    [ownerUserId, instagramUserId]
-  );
+  return db.get('SELECT * FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [ownerUserId, instagramUserId]);
 }
 
 async function getDecryptedTokenForAccount(ownerUserId, instagramUserId) {
@@ -148,10 +157,7 @@ async function getDecryptedTokenForAccount(ownerUserId, instagramUserId) {
 }
 
 async function getDecryptedTokenByInstagramUserId(instagramUserId) {
-  const account = await db.get(
-    'SELECT * FROM instagram_accounts WHERE instagram_user_id = ? ORDER BY expires_at DESC LIMIT 1',
-    [instagramUserId]
-  );
+  const account = await db.get('SELECT * FROM instagram_accounts WHERE instagram_user_id = ? ORDER BY expires_at DESC LIMIT 1', [instagramUserId]);
   if (!account) {
     const error = new Error(`Connected Instagram account ${instagramUserId} not found.`);
     error.statusCode = 404;
@@ -162,63 +168,27 @@ async function getDecryptedTokenByInstagramUserId(instagramUserId) {
     error.statusCode = 401;
     throw error;
   }
-  return {
-    accessToken: decryptToken(account.ciphertext, account.iv, account.tag),
-    ownerUserId: account.owner_user_id,
-    username: account.username
-  };
+  return { accessToken: decryptToken(account.ciphertext, account.iv, account.tag), ownerUserId: account.owner_user_id, username: account.username };
 }
 
 async function sendPrivateReply(instagramUserId, commentId, messageText, accessToken) {
   const url = `https://graph.instagram.com/${apiVersion}/${instagramUserId}/messages`;
-  const bodyData = {
-    recipient: {
-      comment_id: commentId
-    },
-    message: {
-      text: messageText
-    }
-  };
-
-  let response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`
-    },
-    body: JSON.stringify(bodyData)
-  });
-
+  const bodyData = { recipient: { comment_id: commentId }, message: { text: messageText } };
+  let response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(bodyData) });
   let data = await response.json().catch(() => ({}));
-
   if (!response.ok && (response.status === 404 || data.error?.code === 100 || data.error?.type === 'OAuthException')) {
     const fallbackUrl = `https://graph.facebook.com/${apiVersion}/${instagramUserId}/messages`;
-    const fallbackResponse = await fetch(fallbackUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      body: JSON.stringify(bodyData)
-    });
+    const fallbackResponse = await fetch(fallbackUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(bodyData) });
     const fallbackData = await fallbackResponse.json().catch(() => ({}));
-    if (fallbackResponse.ok && (fallbackData.message_id || fallbackData.id)) {
-      return fallbackData;
-    }
-    if (!fallbackResponse.ok) {
-      data = fallbackData;
-      response = fallbackResponse;
-    }
+    if (fallbackResponse.ok && (fallbackData.message_id || fallbackData.id)) return fallbackData;
+    if (!fallbackResponse.ok) { data = fallbackData; response = fallbackResponse; }
   }
-
   if (!response.ok || (data.error && !data.message_id && !data.id)) {
-    const errorMessage = data.error?.message || data.error_message || 'Instagram API call failed.';
-    const error = new Error(`Instagram API Error: ${errorMessage}`);
+    const error = new Error(`Instagram API Error: ${data.error?.message || data.error_message || 'Instagram API call failed.'}`);
     error.statusCode = response.status || 502;
     error.metaError = data.error;
     throw error;
   }
-
   return data;
 }
 
@@ -227,6 +197,7 @@ module.exports = {
   exchangeCode,
   fetchProfile,
   saveAccount,
+  subscribeToWebhooks,
   listAccounts,
   disconnect,
   listAllAccounts,
