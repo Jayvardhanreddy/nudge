@@ -64,7 +64,9 @@ app.use(express.json({ limit: '10kb' }));
 billing.registerPostParser(app);
 function requireSameOriginForStateChanges(request, response, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return next();
-  if (request.path === '/instagram/webhook') return next();
+  // Third-party webhooks do not send our site's Origin/Referer. They must be
+  // authenticated by their own webhook signatures instead of browser CSRF checks.
+  if (request.path === '/instagram/webhook' || request.path === '/billing/webhook') return next();
 
   const fetchSite = request.get('sec-fetch-site');
   if (fetchSite === 'cross-site') {
