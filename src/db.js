@@ -164,8 +164,8 @@ async function run(sql, params = []) {
   }
 
   if (normalized.startsWith('update users set name')) {
-    const [name, id] = params;
-    const result = await users.updateOne({ id }, { $set: { name } });
+    const [name, email, id] = params;
+    const result = await users.updateOne({ id }, { $set: { name, email: String(email).toLowerCase() } });
     return { lastID: id, changes: result.modifiedCount };
   }
 
