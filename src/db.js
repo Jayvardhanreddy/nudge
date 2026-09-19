@@ -115,7 +115,6 @@ async function initialize() {
     webhookEvents.createIndex({ event_id: 1 }, { unique: true, name: 'webhook_event_unique' }),
     automationEvents.createIndex({ owner_user_id: 1, created_at: -1 }, { name: 'automation_events_owner_created' }),
     automationEvents.createIndex({ instagram_user_id: 1, created_at: -1 }, { name: 'automation_events_instagram_created' }),
-    counters.createIndex({ _id: 1 }, { unique: true, name: 'counter_id_unique' })
   ]);
 
   await migrateJsonData();
@@ -290,7 +289,7 @@ async function get(sql, params = []) {
   }
 
   if (normalized.startsWith('select * from instagram_accounts where instagram_user_id = ? order by expires_at desc limit 1')) {
-    return instagramAccounts.findOne({ instagram_user_id: params[0] }).sort({ expires_at: -1 });
+    return instagramAccounts.findOne({ instagram_user_id: params[0] }, { sort: { expires_at: -1 } });
   }
 
   if (normalized.includes('sum(case when event_type')) {
@@ -323,7 +322,7 @@ async function all(sql, params = []) {
   }
 
   if (normalized.includes('from instagram_accounts') && normalized.includes('select owner_user_id as owneruserid')) {
-    return instagramAccounts.find({}, { projection: { _id: 0, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', username: 1, expiresAt: '$expires_at', connectedAt: '$connected_at' } }).toArray();
+    return instagramAccounts.aggregate([{ $project: { _id: 0, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', username: 1, expiresAt: '$expires_at', connectedAt: '$connected_at' } }]).toArray();
   }
 
   if (normalized.includes('from automations') && normalized.includes('left join instagram_accounts')) {
