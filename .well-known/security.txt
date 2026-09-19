@@ -1,0 +1,4 @@
+Contact: mailto:nudge.support360@gmail.com
+Policy: https://nudge-dto0.onrender.com/privacy.html
+Canonical: https://nudge-dto0.onrender.com/.well-known/security.txt
+Preferred-Languages: en
