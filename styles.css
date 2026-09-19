@@ -532,3 +532,67 @@ select.form-control{ appearance:none; background-image:url("data:image/svg+xml,%
   .instagram-account-card{ padding:16px; }
   .instagram-account-card .btn{ padding:8px 11px; font-size:.76rem; }
 }
+
+
+/* ============================================================
+   Nudge Premium UI refresh — 2026
+   Layered SaaS surfaces, indigo accent, stronger hierarchy.
+   ============================================================ */
+:root{
+  --bg:#08090f;
+  --surface:#10121b;
+  --surface-2:#151824;
+  --ink:#f5f7ff;
+  --ink-soft:#9ca3b7;
+  --line:#252a3a;
+  --accent:#7c6cff;
+  --accent-ink:#ffffff;
+  --accent-tint:#211d45;
+  --teal:#35d6b1;
+  --teal-tint:#102d29;
+  --radius-s:12px;
+  --radius-m:18px;
+  --radius-l:28px;
+}
+body{background:radial-gradient(circle at 85% -10%,rgba(124,108,255,.13),transparent 34%),var(--bg);color:var(--ink)}
+.site-header,.app-header{background:rgba(8,9,15,.78);border-color:rgba(255,255,255,.08)}
+.site-header{box-shadow:0 1px 0 rgba(255,255,255,.03)}
+.logo-mark{background:linear-gradient(135deg,#8b7cff,#5f52e8);box-shadow:0 8px 28px rgba(124,108,255,.28)}
+.logo{color:var(--ink)}
+.main-nav a{color:#aeb4c8}.main-nav a:hover{color:#fff}
+.btn-primary{background:#fff;color:#0b0c12}.btn-primary:hover{background:#e9ebf5}
+.btn-accent{background:linear-gradient(135deg,#8b7cff,#6254eb);box-shadow:0 10px 28px rgba(124,108,255,.22)}
+.btn-accent:hover{background:linear-gradient(135deg,#9a8eff,#6c5cf5)}
+.btn-ghost{color:var(--ink);border-color:var(--line);background:rgba(255,255,255,.02)}
+.btn-ghost:hover{border-color:#545b78;background:rgba(255,255,255,.04)}
+.eyebrow{color:#9a90ff}
+.hero-copy h1 em{color:#9a90ff}
+.chat-mock,.t-card,.plan,.overview-card,.activity-card,.placeholder-card,.instagram-account-card{background:linear-gradient(180deg,rgba(21,24,36,.96),rgba(14,16,25,.96));border-color:var(--line);box-shadow:0 20px 55px rgba(0,0,0,.18)}
+.chat-mock .who,.site-footer,.stat-strip,.faq-item{border-color:var(--line)}
+.bubble.in{background:#171a27;color:#dfe3f1}.bubble.out{background:#272044}.bubble.action{background:var(--accent-tint);color:#c9c2ff;border-color:#6658e8}
+.typing-tag,.check{color:var(--teal)}
+.stat-strip{background:rgba(16,18,27,.7)}
+.cta-band,.auth-side,.app-sidebar{background:linear-gradient(180deg,#111322,#090a10);border-color:var(--line)}
+.auth-main{background:var(--bg)}
+.auth-tabs,.pricing-toggle,.field input,.oauth-btn,.form-control{background:#10131d;border-color:var(--line);color:var(--ink)}
+.auth-tabs button.active,.pricing-toggle button.active{background:#fff;color:#0b0c12}
+.field input::placeholder,.form-control::placeholder{color:#6f768b}
+.field input:focus,.form-control:focus{border-color:#6f61f4;box-shadow:0 0 0 3px rgba(124,108,255,.12)}
+.app-sidebar{box-shadow:14px 0 45px rgba(0,0,0,.18)}
+.app-nav a{color:#9299ae}.app-nav a:hover,.app-nav a.active{background:rgba(124,108,255,.12);color:#fff}.app-nav a.active{box-shadow:inset 3px 0 #8b7cff}
+.nav-icon{border-color:#343a50;color:#b9bed0;background:rgba(255,255,255,.02)}
+.sidebar-foot{border-color:rgba(255,255,255,.08)}
+.app-header{box-shadow:0 1px 0 rgba(255,255,255,.03)}
+.overview-card{min-height:154px;position:relative;overflow:hidden}.overview-card::after{content:"";position:absolute;right:-35px;top:-45px;width:110px;height:110px;border-radius:50%;background:rgba(124,108,255,.09);filter:blur(2px)}
+.overview-card strong{color:#fff}
+.overview-note{color:#858ca3}
+.connect-card{background:linear-gradient(135deg,#17152b 0%,#11131e 58%,#0c0d14 100%);border:1px solid #2b2d46;box-shadow:0 24px 65px rgba(0,0,0,.25)}
+.connect-mark,.placeholder-icon{background:linear-gradient(135deg,#8b7cff,#6254eb);box-shadow:0 10px 30px rgba(124,108,255,.2)}
+.success-notice{background:var(--teal-tint);color:#6de6cb;border-color:#216b5e}
+.form-error{background:#351820;color:#ff9eb0;border-color:#8c3045}
+.account-avatar{background:var(--accent-tint);color:#a69cff}
+.plan.popular{background:linear-gradient(180deg,#211d45 0%,var(--surface) 150px);border-color:#7063ef}
+.plan-tag{background:linear-gradient(135deg,#8b7cff,#6254eb)}
+.cookie-consent{background:#11131d;border:1px solid var(--line)}
+:focus-visible{outline-color:#9a90ff}
+@media(max-width:600px){.hero{padding-top:42px}.app-content{padding-top:24px}}
