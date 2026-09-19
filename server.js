@@ -619,9 +619,25 @@ function localSupportAnswer(message) {
   return match ? match.answer : 'Tell me the Nudge task or error in a little more detail. For example: “Instagram is not connecting”, “my automation did not send a private reply”, “how do I change my email?”, or “Google login is not working”.';
 }
 
+function redactSensitiveSupportInput(message) {
+  let text = String(message || '');
+  const patterns = [
+    /sk-[A-Za-z0-9_-]{20,}/g,
+    /Bearer\s+[A-Za-z0-9._-]{20,}/gi,
+    /(?:api[_ -]?key|access[_ -]?token|app[_ -]?secret|client[_ -]?secret|encryption[_ -]?key|password)\s*[:=]\s*[^\s,;]+/gi
+  ];
+  for (const pattern of patterns) text = text.replace(pattern, '[REDACTED SENSITIVE VALUE]');
+  return text;
+}
+
+function redactSensitiveSupportOutput(reply) {
+  return redactSensitiveSupportInput(String(reply || '')).replace(/(?:process\.env|environment variable|system prompt|developer message|internal instructions)\s*[:=]?[^\n]*/gi, '[REDACTED INTERNAL INFORMATION]');
+}
+
 app.post('/api/support/chat', async (request, response) => {
-  const message = typeof request.body?.message === 'string' ? request.body.message.trim() : '';
-  if (!message || message.length > 1000) return response.status(400).json({ error: 'Enter a message between 1 and 1000 characters.' });
+  const rawMessage = typeof request.body?.message === 'string' ? request.body.message.trim() : '';
+  if (!rawMessage || rawMessage.length > 1000) return response.status(400).json({ error: 'Enter a message between 1 and 1000 characters.' });
+  const message = redactSensitiveSupportInput(rawMessage);
 
   try {
     const ip = request.ip || request.socket.remoteAddress || 'unknown';
@@ -655,7 +671,8 @@ app.post('/api/support/chat', async (request, response) => {
     const output = Array.isArray(data.output)
       ? data.output.flatMap((item) => Array.isArray(item.content) ? item.content : []).map((item) => item.text || '').filter(Boolean).join('\n').trim()
       : '';
-    return response.json({ reply: output || localSupportAnswer(message), mode: output ? 'ai' : 'built-in-fallback' });
+    const safeOutput = redactSensitiveSupportOutput(output);
+    return response.json({ reply: safeOutput || localSupportAnswer(message), mode: safeOutput ? 'ai' : 'built-in-fallback' });
   } catch (error) {
     console.error('Support chat error:', error.message);
     return response.status(500).json({ error: 'Support chat is temporarily unavailable. Please email nudge.support360@gmail.com.' });
