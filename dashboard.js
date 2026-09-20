@@ -85,6 +85,18 @@
       if (userName) userName.textContent = data.user.name;
       if (userEmail) userEmail.textContent = data.user.email;
       if (welcomeHeading) welcomeHeading.textContent = 'Welcome back, ' + data.user.name;
+      var planBadge = document.getElementById('planBadge');
+      if (planBadge) {
+        try {
+          var billingResponse = await fetch('/api/billing/status', { credentials: 'same-origin' });
+          var billingData = await billingResponse.json().catch(function () { return {}; });
+          if (billingResponse.ok) {
+            var currentPlan = String(billingData.plan || 'free');
+            planBadge.textContent = currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1) + ' plan';
+            planBadge.classList.toggle('paid', currentPlan !== 'free');
+          }
+        } catch (billingError) {}
+      }
     } catch (error) {
       showError('Unable to verify your session. Please refresh or sign in again.');
     }
