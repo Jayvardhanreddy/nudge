@@ -123,17 +123,46 @@ function verifyNudgeJwt(token) {
 const AUTH_SESSION_DAYS = 30;
 const AUTH_SESSION_MS = AUTH_SESSION_DAYS * 24 * 60 * 60 * 1000;
 
-function setAuthCookie(response, user) {
-  response.cookie('nudge_token', authService.createToken(user), {
+function sessionCookieOptions() {
+  return {
     httpOnly: true,
     sameSite: 'lax',
     secure: isProduction,
     maxAge: AUTH_SESSION_MS,
-    path: '/'
-  });
+    expires: new Date(Date.now() + AUTH_SESSION_MS),
+    path: '/',
+    priority: 'high'
+  };
+}
+
+async function setAuthCookie(response, user) {
+  const expiresAt = new Date(Date.now() + AUTH_SESSION_MS);
+  const sessionToken = await authService.createSession(user.id, expiresAt);
+  response.cookie('nudge_session', sessionToken, sessionCookieOptions());
+}
+
+async function refreshAuthCookie(response, sessionToken) {
+  const expiresAt = new Date(Date.now() + AUTH_SESSION_MS);
+  await authService.refreshSession(sessionToken, expiresAt);
+  response.cookie('nudge_session', sessionToken, sessionCookieOptions());
 }
 
 async function requireAuth(request, response, next) {
+  const sessionToken = request.cookies.nudge_session;
+  if (sessionToken) {
+    try {
+      const user = await authService.getSessionUser(sessionToken);
+      if (user) {
+        request.user = user;
+        await refreshAuthCookie(response, sessionToken);
+        return next();
+      }
+    } catch (error) {
+      console.error('Mongo session lookup failed:', error.message);
+    }
+  }
+
+  // Backward compatibility for users who still have the older JWT cookie.
   const token = request.cookies.nudge_token;
   if (!token) return response.status(401).json({ error: 'Authentication required.' });
   try {
@@ -141,10 +170,8 @@ async function requireAuth(request, response, next) {
     const user = await authService.getUserById(payload.sub);
     if (!user) return response.status(401).json({ error: 'Authentication required.' });
     request.user = user;
-    // Sliding session: keep an authenticated user signed in while the site is actively used.
-    // This also refreshes the persistent cookie instead of silently letting the browser
-    // keep an old token that is close to expiry.
-    setAuthCookie(response, user);
+    // Migrate the existing JWT-authenticated browser to a Mongo-backed session.
+    await setAuthCookie(response, user);
     return next();
   } catch (error) {
     return response.status(401).json({ error: 'Authentication required.' });
@@ -180,7 +207,7 @@ app.post('/api/auth/signup', loginRateLimit, async (request, response, next) => 
       email: request.body.email.trim().toLowerCase(),
       password: request.body.password
     });
-    setAuthCookie(response, user);
+    await setAuthCookie(response, user);
     return response.status(201).json({ user });
   } catch (error) {
     return next(error);
@@ -231,7 +258,7 @@ app.get('/api/auth/google/callback', async (request, response) => {
       return fail('Google account verification failed.');
     }
     const user = await authService.registerOAuthUser({ name: profile.name || profile.email.split('@')[0], email: profile.email });
-    setAuthCookie(response, user);
+    await setAuthCookie(response, user);
     return response.redirect('/dashboard.html');
   } catch (error) {
     console.error('Google OAuth callback failed:', error.message);
@@ -247,14 +274,20 @@ app.post('/api/auth/login', loginRateLimit, async (request, response, next) => {
       request.body.email.trim().toLowerCase(),
       request.body.password
     );
-    setAuthCookie(response, user);
+    await setAuthCookie(response, user);
     return response.json({ user });
   } catch (error) {
     return next(error);
   }
 });
 
-app.post('/api/auth/logout', (request, response) => {
+app.post('/api/auth/logout', async (request, response) => {
+  try {
+    if (request.cookies.nudge_session) await authService.deleteSession(request.cookies.nudge_session);
+  } catch (error) {
+    console.error('Session logout cleanup failed:', error.message);
+  }
+  response.clearCookie('nudge_session', { httpOnly: true, sameSite: 'lax', secure: isProduction, path: '/' });
   response.clearCookie('nudge_token', { httpOnly: true, sameSite: 'lax', secure: isProduction, path: '/' });
   response.status(204).end();
 });
