@@ -3,23 +3,32 @@ const crypto = require('crypto');
 const db = require('../db');
 
 function publicUser(user) {
-  return { id: user.id, name: user.name, email: user.email, createdAt: user.created_at || user.createdAt };
+  if (!user) return null;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    createdAt: user.created_at || user.createdAt
+  };
 }
 
 async function register({ name, email, password }) {
-  const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const existing = await db.getUserByEmail(normalizedEmail);
   if (existing) {
     const error = new Error('An account with that email already exists.');
     error.statusCode = 409;
     throw error;
   }
+
   const user = {
     id: crypto.randomUUID(),
-    name,
-    email,
+    name: String(name || '').trim(),
+    email: normalizedEmail,
     passwordHash: await bcrypt.hash(password, 12),
     createdAt: new Date().toISOString()
   };
+
   await db.run(
     'INSERT INTO users (id, name, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)',
     [user.id, user.name, user.email, user.passwordHash, user.createdAt]
@@ -28,12 +37,15 @@ async function register({ name, email, password }) {
 }
 
 async function authenticate(email, password) {
-  const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
-  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const user = await db.getUserByEmail(normalizedEmail);
+
+  if (!user || !user.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
     const error = new Error('Invalid email or password.');
     error.statusCode = 401;
     throw error;
   }
+
   return publicUser(user);
 }
 
@@ -47,7 +59,13 @@ function hashSessionToken(token) {
 
 async function createSession(userId, expiresAt) {
   const token = createSessionToken();
-  await db.createSession(userId, hashSessionToken(token), expiresAt);
+  await db.createSession({
+    user_id: userId,
+    token_hash: hashSessionToken(token),
+    expires_at: expiresAt,
+    created_at: new Date().toISOString(),
+    last_seen_at: new Date().toISOString()
+  });
   return token;
 }
 
@@ -55,6 +73,10 @@ async function getSessionUser(token) {
   if (!token) return null;
   const session = await db.getSession(hashSessionToken(token));
   if (!session) return null;
+  if (session.expires_at && new Date(session.expires_at).getTime() <= Date.now()) {
+    await db.deleteSession(hashSessionToken(token));
+    return null;
+  }
   return getUserById(session.user_id);
 }
 
@@ -67,28 +89,35 @@ async function deleteSession(token) {
 }
 
 function createToken(user) {
-  return require('jsonwebtoken').sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '30d', issuer: 'nudge-app', audience: 'nudge-web' });
+  return require('jsonwebtoken').sign(
+    { sub: user.id },
+    process.env.JWT_SECRET,
+    { expiresIn: '30d', issuer: 'nudge-app', audience: 'nudge-web' }
+  );
 }
 
 async function getUserByEmail(email) {
-  const user = await db.get('SELECT * FROM users WHERE email = ?', [String(email).trim().toLowerCase()]);
-  return user ? publicUser(user) : null;
+  return publicUser(await db.getUserByEmail(String(email).trim().toLowerCase()));
 }
 
 async function getUserById(id) {
-  const user = await db.get('SELECT * FROM users WHERE id = ?', [id]);
-  return user ? publicUser(user) : null;
+  return publicUser(await db.getUserById(id));
 }
 
 async function listUsers() {
-  return db.all('SELECT id, name, email, created_at AS createdAt FROM users ORDER BY created_at DESC');
+  const users = await db.listUsers();
+  return users.map(publicUser);
 }
 
 async function registerOAuthUser({ name, email }) {
   const normalizedEmail = String(email || '').trim().toLowerCase();
-  if (!normalizedEmail) throw Object.assign(new Error('Google did not return an email address.'), { statusCode: 400 });
-  const existing = await db.get('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+  if (!normalizedEmail) {
+    throw Object.assign(new Error('OAuth provider did not return an email address.'), { statusCode: 400 });
+  }
+
+  const existing = await db.getUserByEmail(normalizedEmail);
   if (existing) return publicUser(existing);
+
   const user = {
     id: crypto.randomUUID(),
     name: String(name || 'Nudge Creator').trim().slice(0, 100),
@@ -96,11 +125,25 @@ async function registerOAuthUser({ name, email }) {
     passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12),
     createdAt: new Date().toISOString()
   };
+
   await db.run(
     'INSERT INTO users (id, name, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)',
     [user.id, user.name, user.email, user.passwordHash, user.createdAt]
   );
+
   return publicUser(user);
 }
 
-module.exports = { register, authenticate, registerOAuthUser, createToken, createSession, getSessionUser, refreshSession, deleteSession, getUserById, getUserByEmail, listUsers };
+module.exports = {
+  register,
+  authenticate,
+  registerOAuthUser,
+  createToken,
+  createSession,
+  getSessionUser,
+  refreshSession,
+  deleteSession,
+  getUserById,
+  getUserByEmail,
+  listUsers
+};
