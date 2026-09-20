@@ -66,6 +66,7 @@
 <div class="tool-form-grid">
 <div class="field"><label for="contentFormat">Format</label><select class="form-control" id="contentFormat"><option>Reel</option><option>Carousel</option><option>Post</option><option>Story</option></select></div>
 <div class="field"><label for="contentTone">Tone</label><select class="form-control" id="contentTone"><option>Educational</option><option>Bold</option><option>Friendly</option><option>Personal</option></select></div>
+<div class="field"><label for="contentLevel">Creator level</label><select class="form-control" id="contentLevel"><option value="beginner">Beginner</option><option value="pro" selected>Pro</option><option value="pro-max">Pro Max</option></select></div>
 </div>
 <button class="btn btn-accent" id="generateContent" style="margin-top:14px">Generate copy</button>
 <div class="tool-output" id="contentOutput">Your hook, structure and CTA will appear here.</div>
@@ -78,7 +79,7 @@
 <div class="field"><label for="scriptTopic">Topic</label><input class="form-control" id="scriptTopic" placeholder="e.g. grow from 0 followers"></div>
 <div class="field"><label for="scriptLength">Length</label><select class="form-control" id="scriptLength"><option>15 seconds</option><option selected>30 seconds</option><option>60 seconds</option></select></div>
 </div>
-<div class="field" style="margin-top:14px"><label for="scriptAudience">Audience</label><input class="form-control" id="scriptAudience" placeholder="new creators"></div>
+<div class="tool-form-grid"><div class="field"><label for="scriptAudience">Audience</label><input class="form-control" id="scriptAudience" placeholder="new creators"></div><div class="field"><label for="scriptLevel">Creator level</label><select class="form-control" id="scriptLevel"><option value="beginner">Beginner</option><option value="pro" selected>Pro</option><option value="pro-max">Pro Max</option></select></div></div>
 <button class="btn btn-accent" id="generateScript" style="margin-top:14px">Build script</button>
 <div class="tool-output" id="scriptOutput">Your script will appear here.</div>
 <button class="btn btn-ghost" id="copyScript" style="margin-top:10px">Copy script</button>
@@ -90,17 +91,6 @@
 <button class="btn btn-accent" id="repurposeContent" style="margin-top:14px">Repurpose</button>
 <div class="tool-output" id="repurposeOutput">Your Reel, carousel, Story and caption versions will appear here.</div>
 <button class="btn btn-ghost" id="copyRepurpose" style="margin-top:10px">Copy pack</button>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Hashtag set builder</h2><p>Create reusable starting sets by niche and audience. Always review relevance before publishing.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="hashtagNiche">Niche</label><input class="form-control" id="hashtagNiche" placeholder="fitness"></div>
-<div class="field"><label for="hashtagAudience">Audience</label><input class="form-control" id="hashtagAudience" placeholder="beginners"></div>
-</div>
-<button class="btn btn-accent" id="buildHashtags" style="margin-top:14px">Build set</button>
-<div class="tool-output" id="hashtagOutput">Your hashtag set will appear here.</div>
-<button class="btn btn-ghost" id="copyHashtags" style="margin-top:10px">Copy hashtags</button>
 </section>
 
 <section class="activity-card creator-tool-card">
@@ -131,14 +121,6 @@
 <button class="btn btn-accent" id="buildUtm" style="margin-top:14px">Build tracked link</button>
 <div class="tool-output" id="utmOutput">Your tracked link will appear here.</div>
 <button class="btn btn-ghost" id="copyUtm" disabled style="margin-top:10px">Copy link</button>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Offer CTA generator</h2><p>Create a comment-to-DM CTA for your Nudge automation.</p></div>
-<div class="field"><label for="offer">Offer</label><input class="form-control" id="offer" placeholder="30-minute fitness consultation"></div>
-<div class="field" style="margin-top:14px"><label for="keyword">Comment keyword</label><input class="form-control" id="keyword" value="INFO"></div>
-<button class="btn btn-accent" id="generateCta" style="margin-top:14px">Generate CTA</button>
-<div class="tool-output" id="ctaOutput">Example: Comment INFO and I'll send you the details.</div>
 </section>
 
 <section class="activity-card creator-tool-card">
@@ -225,18 +207,6 @@
 <div class="field" style="margin-top:14px"><label for="keyword2">Keyword</label><input class="form-control" id="keyword2" value="INFO"></div>
 <button class="btn btn-accent" id="generateCta2" style="margin-top:14px">Generate CTA</button>
 <div class="tool-output" id="ctaOutput2">Comment INFO and I'll send you the details.</div>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Brand deal quote calculator</h2><p>Use this as an internal planning estimate based on your inputs.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="quoteFollowers">Followers</label><input class="form-control" id="quoteFollowers" type="number" min="0" value="10000"></div>
-<div class="field"><label for="quoteEngagement">Engagement %</label><input class="form-control" id="quoteEngagement" type="number" min="0" max="100" step="0.1" value="3"></div>
-<div class="field"><label for="quoteDeliverables">Deliverables</label><input class="form-control" id="quoteDeliverables" type="number" min="1" value="1"></div>
-<div class="field"><label for="quoteUsage">Usage rights %</label><input class="form-control" id="quoteUsage" type="number" min="0" max="200" value="20"></div>
-</div>
-<button class="btn btn-accent" id="calculateQuote" style="margin-top:14px">Estimate quote</button>
-<div class="tool-result"><span>Planning quote</span><strong id="quoteResult">₹1,200</strong><small>Adjust for scope, exclusivity and licensing.</small></div>
 </section>
 
 </div>
