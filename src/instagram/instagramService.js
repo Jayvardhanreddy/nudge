@@ -188,7 +188,7 @@ async function resolveReelUrl(ownerUserId, instagramUserId, reelUrl) {
     error.statusCode = 400;
     throw error;
   }
-  const normalizedPath = requested.pathname.replace(/\\/+$/, '').toLowerCase();
+  const normalizedPath = requested.pathname.replace(/\/+$/, '').toLowerCase();
   const reels = await listReels(ownerUserId, instagramUserId);
   const match = reels.find((item) => {
     try {
