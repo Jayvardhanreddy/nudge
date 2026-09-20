@@ -67,7 +67,7 @@
           <div class="card-heading">
             <div>
               <h2 id="automationFormHeading">Create Automation</h2>
-              <p>Configure a keyword trigger and private reply message.</p>
+              <p>Choose the account, optionally target one Reel, then set the keyword and private reply.</p>
             </div>
           </div>
           <form id="automationForm" style="margin-top:20px;">
@@ -76,6 +76,12 @@
             <div class="field">
               <label for="automationAccountSelect">Instagram Account</label>
               <select id="automationAccountSelect" class="form-control" required></select>
+            </div>
+
+            <div class="field">
+              <label for="automationReelUrlInput">Specific Instagram Reel (optional)</label>
+              <input type="url" id="automationReelUrlInput" class="form-control" placeholder="https://www.instagram.com/reel/..." autocomplete="off" />
+              <p id="automationReelStatus" style="font-size:0.8rem; color:var(--ink-soft); margin-top:4px;">Leave empty to let this automation match comments on any Reel for this account.</p>
             </div>
 
             <div class="field">
