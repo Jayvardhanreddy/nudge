@@ -89,15 +89,6 @@
   });
   if($('copyUtm'))$('copyUtm').addEventListener('click',function(){copyText(builtUtm,this);});
 
-  // CTA generators
-  function generateCta(offerId,keywordId,outId){
-    var offer=value(offerId)||'my offer', keyword=(value(keywordId)||'INFO').toUpperCase().replace(/[^A-Z0-9_-]/g,'');
-    if(!keyword)keyword='INFO';
-    $(outId).textContent='Comment '+keyword+' and I\'ll send you the details for '+offer+'.';
-  }
-  if($('generateCta'))$('generateCta').addEventListener('click',function(){generateCta('offer','keyword','ctaOutput');});
-  if($('generateCta2'))$('generateCta2').addEventListener('click',function(){generateCta('offer2','keyword2','ctaOutput2');});
-
   // Ideas
   var ideas=read(KEYS.ideas,[]);
   function renderIdeas(){
@@ -117,26 +108,60 @@
     ideas.push({id:uid(),text:v,createdAt:new Date().toISOString()});write(KEYS.ideas,ideas);$('ideaInput').value='';renderIdeas();refreshSummary();notify('Idea saved.');
   });
 
-  // Hook & caption studio
+  // Professional Creator AI — output changes materially by creator level.
+  async function generateCreatorAI(tool, payload, button, output) {
+    clearError();
+    if (!output || !button) return;
+    button.disabled = true;
+    var original = button.textContent;
+    button.textContent = 'Generating…';
+    output.textContent = 'Building a professional result for your selected creator level…';
+    try {
+      var response = await fetch('/api/creator/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(Object.assign({ tool: tool }, payload))
+      });
+      var data = await response.json().catch(function(){return {};});
+      if (!response.ok) {
+        output.textContent = '';
+        showError(data.error || 'Creator AI could not generate this result.');
+        return;
+      }
+      output.textContent = data.output || 'No result returned.';
+    } catch (error) {
+      output.textContent = '';
+      showError('Unable to reach Creator AI. Please try again.');
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
+
   var contentCopy='';
   if($('generateContent'))$('generateContent').addEventListener('click',function(){
-    var topic=value('contentTopic')||'your topic', format=value('contentFormat')||'Reel', tone=value('contentTone')||'Educational';
-    contentCopy='HOOK\n'+topic+' — here is what most creators get wrong.\n\n'+
-      'STRUCTURE\n1. Open with the problem.\n2. Give 3 specific points.\n3. Show one practical example.\n4. End with one clear takeaway.\n\n'+
-      'CAPTION\nIf you are creating '+format.toLowerCase()+' content about '+topic+', save this. Keep the delivery '+tone.toLowerCase()+', specific and easy to act on.\n\n'+
-      'CTA\nComment INFO if you want the checklist.';
-    $('contentOutput').textContent=contentCopy;
+    generateCreatorAI('content',{
+      topic:value('contentTopic'),
+      format:value('contentFormat')||'Reel',
+      tone:value('contentTone')||'Educational',
+      level:value('contentLevel')||'pro',
+      audience:''
+    },this,$('contentOutput'));
   });
-  if($('copyContent'))$('copyContent').addEventListener('click',function(){copyText(contentCopy,this);});
+  if($('copyContent'))$('copyContent').addEventListener('click',function(){copyText(contentCopy || $('contentOutput').textContent,this);});
 
   // Reel script builder
   var scriptCopy='';
   if($('generateScript'))$('generateScript').addEventListener('click',function(){
-    var topic=value('scriptTopic')||'your topic', length=value('scriptLength')||'30 seconds', audience=value('scriptAudience')||'your audience';
-    scriptCopy='REEL SCRIPT — '+length+'\n\nHOOK\n“Stop scrolling if you are a '+audience+' trying to '+topic+'.”\n\nVALUE 1\nStart with the biggest mistake: explain it in one sentence.\n\nVALUE 2\nShow the simple alternative and one example.\n\nVALUE 3\nGive one action the viewer can take today.\n\nPROOF\nAdd your result, screenshot, demonstration or specific example.\n\nCTA\n“Save this and comment INFO if you want the full checklist.”';
-    $('scriptOutput').textContent=scriptCopy;
+    generateCreatorAI('script',{
+      topic:value('scriptTopic'),
+      length:value('scriptLength')||'30 seconds',
+      audience:value('scriptAudience')||'your audience',
+      level:value('scriptLevel')||'pro'
+    },this,$('scriptOutput'));
   });
-  if($('copyScript'))$('copyScript').addEventListener('click',function(){copyText(scriptCopy,this);});
+  if($('copyScript'))$('copyScript').addEventListener('click',function(){copyText(scriptCopy || $('scriptOutput').textContent,this);});
 
   // Repurposer
   var repurposeCopy='';
@@ -146,15 +171,6 @@
     $('repurposeOutput').textContent=repurposeCopy;
   });
   if($('copyRepurpose'))$('copyRepurpose').addEventListener('click',function(){copyText(repurposeCopy,this);});
-
-  // Hashtags
-  var hashtagCopy='';
-  if($('buildHashtags'))$('buildHashtags').addEventListener('click',function(){
-    var niche=(value('hashtagNiche')||'creator').toLowerCase().replace(/\s+/g,''), audience=(value('hashtagAudience')||'community').toLowerCase().replace(/\s+/g,'');
-    hashtagCopy='#'+niche+' #'+niche+'tips #'+niche+'creator #'+niche+'community #'+audience+' #'+audience+'tips #contentcreator #creatortips #instagramcreator #reelscreator #personalbrand #socialmediatips';
-    $('hashtagOutput').textContent=hashtagCopy;
-  });
-  if($('copyHashtags'))$('copyHashtags').addEventListener('click',function(){copyText(hashtagCopy,this);});
 
   // Calendar
   var calendar=read(KEYS.calendar,[]);
@@ -281,15 +297,6 @@
     goals.push({id:uid(),name:name,target:target,current:current,unit:value('goalUnit')});
     write(KEYS.goals,goals);$('goalName').value='';renderGoals();refreshSummary();notify('Goal added.');
   });
-
-  // Quote calculator
-  function calcQuote(){
-    var followers=Math.max(0,num('quoteFollowers')),engagement=Math.max(0,Math.min(100,num('quoteEngagement'))),deliverables=Math.max(1,num('quoteDeliverables')),usage=Math.max(0,Math.min(200,num('quoteUsage')));
-    var base=Math.max(500,followers*0.08+followers*engagement/100*20);
-    var quote=Math.round(base*deliverables*(1+usage/100)/100)*100;
-    if($('quoteResult'))$('quoteResult').textContent=money.format(quote);
-  }
-  if($('calculateQuote'))$('calculateQuote').addEventListener('click',calcQuote);
 
   // Summary
   function refreshSummary(){
