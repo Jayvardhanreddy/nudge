@@ -113,6 +113,7 @@ async function initialize() {
     instagramAccounts.createIndex({ instagram_user_id: 1, expires_at: -1 }, { name: 'instagram_user_lookup' }),
     automations.createIndex({ owner_user_id: 1, created_at: -1 }, { name: 'automations_owner_created' }),
     automations.createIndex({ instagram_user_id: 1, enabled: 1 }, { name: 'automations_instagram_enabled' }),
+    automations.createIndex({ instagram_user_id: 1, media_id: 1, enabled: 1 }, { name: 'automations_instagram_media_enabled' }),
     webhookEvents.createIndex({ event_id: 1 }, { unique: true, name: 'webhook_event_unique' }),
     automationEvents.createIndex({ owner_user_id: 1, created_at: -1 }, { name: 'automation_events_owner_created' }),
     automationEvents.createIndex({ instagram_user_id: 1, created_at: -1 }, { name: 'automation_events_instagram_created' }),
@@ -186,7 +187,7 @@ async function run(sql, params = []) {
   }
 
   if (normalized.startsWith('insert into automations')) {
-    const [ownerUserId, instagramUserId, keyword, dmMessage, enabled, createdAt, updatedAt] = params;
+    const [ownerUserId, instagramUserId, keyword, dmMessage, enabled, createdAt, updatedAt, mediaId = null, mediaUrl = null] = params;
     const id = await nextSequence('automation_id');
     await automations.insertOne({
       id,
@@ -196,18 +197,20 @@ async function run(sql, params = []) {
       dm_message: dmMessage,
       enabled: Number(enabled),
       created_at: createdAt,
-      updated_at: updatedAt
+      updated_at: updatedAt,
+      media_id: mediaId,
+      media_url: mediaUrl
     });
     return { lastID: id, changes: 1 };
   }
 
   if (normalized.startsWith('update automations set')) {
-    const [instagramUserId, keyword, dmMessage, enabled, updatedAt, id, ownerUserId] = params;
+    const [instagramUserId, keyword, dmMessage, enabled, updatedAt, id, ownerUserId, mediaId = null, mediaUrl = null] = params;
     const idFilter = automationIdFilter(id);
     if (!idFilter) return { changes: 0 };
     const result = await automations.updateOne(
       { ...idFilter, owner_user_id: ownerUserId },
-      { $set: { instagram_user_id: instagramUserId, keyword, dm_message: dmMessage, enabled: Number(enabled), updated_at: updatedAt } }
+      { $set: { instagram_user_id: instagramUserId, keyword, dm_message: dmMessage, enabled: Number(enabled), updated_at: updatedAt, media_id: mediaId, media_url: mediaUrl } }
     );
     return { changes: result.modifiedCount };
   }
@@ -358,7 +361,7 @@ async function all(sql, params = []) {
       { $sort: { created_at: -1 } },
       { $lookup: { from: 'instagram_accounts', let: { owner: '$owner_user_id', ig: '$instagram_user_id' }, pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$owner_user_id', '$$owner'] }, { $eq: ['$instagram_user_id', '$$ig'] }] } } }, { $project: { _id: 0, username: 1 } }], as: 'account' } },
       { $set: { username: { $ifNull: [{ $arrayElemAt: ['$account.username', 0] }, null] } } },
-      { $project: { _id: 0, id: { $ifNull: ['$id', { $toString: '$_id' }] }, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', keyword: 1, dmMessage: '$dm_message', enabled: 1, createdAt: '$created_at', updatedAt: '$updated_at', username: 1 } }
+      { $project: { _id: 0, id: { $ifNull: ['$id', { $toString: '$_id' }] }, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', keyword: 1, dmMessage: '$dm_message', enabled: 1, mediaId: '$media_id', mediaUrl: '$media_url', createdAt: '$created_at', updatedAt: '$updated_at', username: 1 } }
     ]).toArray();
   }
 
