@@ -16,9 +16,7 @@
             <h1>Instagram Accounts</h1>
           </div>
         </div>
-        <div class="profile-area">
-          <div class="profile-copy"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span></div></div>
-        </div>
+        <div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span></div></div>
       </header><main class="app-content"><div id="dashboardError" class="form-error"></div><div id="connectionNotice" class="success-notice" hidden>Instagram account connected successfully.</div><section class="accounts-heading"><div><p class="eyebrow">Integrations</p><h2>Instagram accounts</h2><p>Connect a professional Instagram account to power your Nudge automations.</p></div><button class="btn btn-accent" id="connectInstagram">Connect Instagram</button></section><section id="instagramAccounts" class="instagram-accounts"></section><section id="instagramEmpty" class="placeholder-card accounts-empty"><div class="placeholder-icon">i</div><h2>No Instagram account connected</h2><p>Connect your Instagram account to securely authorize Nudge through Meta. Your Instagram password is never requested.</p><button class="btn btn-accent" id="connectInstagramEmpty">Connect Instagram</button></section></main></div></div><div class="sidebar-backdrop" id="sidebarBackdrop"></div><script src="dashboard.js"></script>
   <script>document.getElementById('connectInstagramEmpty').addEventListener('click', function () { window.location.href = '/api/instagram/authorize'; });</script>
 </body></html>
