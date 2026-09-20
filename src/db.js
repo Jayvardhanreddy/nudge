@@ -106,7 +106,7 @@ async function initialize() {
   database = client.db(databaseName);
   await database.command({ ping: 1 });
 
-  const { users, instagramAccounts, automations, webhookEvents, automationEvents, counters, rateLimits } = collections();
+  const { users, instagramAccounts, automations, webhookEvents, automationEvents, counters, rateLimits, sessions } = collections();
 
   await Promise.all([
     users.createIndex({ email: 1 }, { unique: true, name: 'users_email_unique' }),
@@ -120,7 +120,7 @@ async function initialize() {
     automationEvents.createIndex({ instagram_user_id: 1, created_at: -1 }, { name: 'automation_events_instagram_created' }),
     rateLimits.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'rate_limits_ttl' }),
     sessions.createIndex({ token_hash: 1 }, { unique: true, name: 'sessions_token_unique' }),
-    sessions.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'sessions_expires_ttl' }),
+    sessions.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'sessions_expires_ttl' })
   ]);
 
   await migrateJsonData();
@@ -180,260 +180,185 @@ async function run(sql, params = []) {
       { $set: { owner_user_id: ownerUserId, instagram_user_id: instagramUserId, username, ciphertext, iv, tag, expires_at: expiresAt, connected_at: connectedAt } },
       { upsert: true }
     );
-    return { lastID: instagramUserId, changes: result.modifiedCount || result.upsertedCount };
+    return { lastID: result.upsertedId ? result.upsertedId.toString() : null, changes: result.upsertedCount || result.modifiedCount };
+  }
+
+  if (normalized.startsWith('update instagram_accounts set')) {
+    const [username, ciphertext, iv, tag, expiresAt, connectedAt, instagramUserId, ownerUserId] = params;
+    const result = await instagramAccounts.updateOne(
+      { instagram_user_id: instagramUserId, owner_user_id: ownerUserId },
+      { $set: { username, ciphertext, iv, tag, expires_at: expiresAt, connected_at: connectedAt } }
+    );
+    return { changes: result.modifiedCount };
   }
 
   if (normalized.startsWith('delete from instagram_accounts')) {
-    const [ownerUserId, instagramUserId] = params;
-    const result = await instagramAccounts.deleteOne({ owner_user_id: ownerUserId, instagram_user_id: instagramUserId });
+    const [instagramUserId, ownerUserId] = params;
+    const result = await instagramAccounts.deleteOne({ instagram_user_id: instagramUserId, owner_user_id: ownerUserId });
     return { changes: result.deletedCount };
   }
 
+  if (normalized.startsWith('select * from instagram_accounts')) {
+    const [ownerUserId] = params;
+    const rows = await instagramAccounts.find({ owner_user_id: ownerUserId }).sort({ connected_at: -1 }).toArray();
+    return { rows };
+  }
+
+  if (normalized.startsWith('select * from users where email')) {
+    const [email] = params;
+    const row = await users.findOne({ email: String(email).toLowerCase() });
+    return { rows: row ? [row] : [] };
+  }
+
+  if (normalized.startsWith('select * from users where id')) {
+    const [id] = params;
+    const row = await users.findOne({ id });
+    return { rows: row ? [row] : [] };
+  }
+
   if (normalized.startsWith('insert into automations')) {
-    const [ownerUserId, instagramUserId, keyword, dmMessage, enabled, createdAt, updatedAt, mediaId = null, mediaUrl = null] = params;
-    const id = await nextSequence('automation_id');
-    await automations.insertOne({
+    const [id, ownerUserId, instagramUserId, mediaId, mediaUrl, mediaTitle, keyword, replyTemplate, dmTemplate, enabled, createdAt, updatedAt] = params;
+    const result = await automations.insertOne({
       id,
       owner_user_id: ownerUserId,
       instagram_user_id: instagramUserId,
-      keyword,
-      dm_message: dmMessage,
-      enabled: Number(enabled),
-      created_at: createdAt,
-      updated_at: updatedAt,
       media_id: mediaId,
-      media_url: mediaUrl
+      media_url: mediaUrl,
+      media_title: mediaTitle,
+      keyword,
+      reply_template: replyTemplate,
+      dm_template: dmTemplate,
+      enabled: Boolean(enabled),
+      created_at: createdAt,
+      updated_at: updatedAt
     });
-    return { lastID: id, changes: 1 };
+    return { lastID: result.insertedId.toString(), changes: result.acknowledged ? 1 : 0 };
+  }
+
+  if (normalized.startsWith('select * from automations where owner_user_id')) {
+    const [ownerUserId] = params;
+    const rows = await automations.find({ owner_user_id: ownerUserId }).sort({ created_at: -1 }).toArray();
+    return { rows };
+  }
+
+  if (normalized.startsWith('select * from automations where instagram_user_id')) {
+    const [instagramUserId] = params;
+    const rows = await automations.find({ instagram_user_id: instagramUserId }).sort({ created_at: -1 }).toArray();
+    return { rows };
+  }
+
+  if (normalized.startsWith('select * from automations where id')) {
+    const [id] = params;
+    const filter = automationIdFilter(id);
+    if (!filter) return { rows: [] };
+    const row = await automations.findOne(filter);
+    return { rows: row ? [row] : [] };
   }
 
   if (normalized.startsWith('update automations set')) {
-    const [instagramUserId, keyword, dmMessage, enabled, updatedAt, id, ownerUserId, mediaId = null, mediaUrl = null] = params;
-    const idFilter = automationIdFilter(id);
-    if (!idFilter) return { changes: 0 };
+    const [mediaId, mediaUrl, mediaTitle, keyword, replyTemplate, dmTemplate, enabled, updatedAt, id] = params;
+    const filter = automationIdFilter(id);
+    if (!filter) return { changes: 0 };
     const result = await automations.updateOne(
-      { ...idFilter, owner_user_id: ownerUserId },
-      { $set: { instagram_user_id: instagramUserId, keyword, dm_message: dmMessage, enabled: Number(enabled), updated_at: updatedAt, media_id: mediaId, media_url: mediaUrl } }
+      filter,
+      { $set: { media_id: mediaId, media_url: mediaUrl, media_title: mediaTitle, keyword, reply_template: replyTemplate, dm_template: dmTemplate, enabled: Boolean(enabled), updated_at: updatedAt } }
     );
     return { changes: result.modifiedCount };
   }
 
   if (normalized.startsWith('delete from automations')) {
-    const [id, ownerUserId] = params;
-    const idFilter = automationIdFilter(id);
-    if (!idFilter) return { changes: 0 };
-    const result = await automations.deleteOne({ ...idFilter, owner_user_id: ownerUserId });
+    const [id] = params;
+    const filter = automationIdFilter(id);
+    if (!filter) return { changes: 0 };
+    const result = await automations.deleteOne(filter);
     return { changes: result.deletedCount };
   }
 
-  if (normalized.startsWith('insert or ignore into webhook_events')) {
-    const [eventId, processedAt] = params;
+  if (normalized.startsWith('insert into webhook_events')) {
+    const [eventId, receivedAt, payload] = params;
     const result = await webhookEvents.updateOne(
       { event_id: eventId },
-      { $setOnInsert: { event_id: eventId, processed_at: processedAt } },
+      { $setOnInsert: { event_id: eventId, received_at: receivedAt, payload } },
       { upsert: true }
     );
     return { changes: result.upsertedCount };
   }
 
-  if (normalized.startsWith('insert into automation_events')) {
-    const ownerUserId = params[0];
-    const instagramUserId = params[1];
-    const automationId = params[2];
-    const commentId = params[3];
-    const eventType = params[4];
-    const keyword = params[5];
-    const messageText = params[6];
-    const status = params[7];
-    const hasError = params.length === 10;
-    const errorMessage = hasError ? params[8] : null;
-    const createdAt = hasError ? params[9] : params[8];
+  if (normalized.startsWith('select * from webhook_events')) {
+    const rows = await webhookEvents.find({}).sort({ received_at: -1 }).toArray();
+    return { rows };
+  }
 
+  if (normalized.startsWith('insert into automation_events')) {
+    const [eventId, ownerUserId, instagramUserId, mediaId, commentId, username, keyword, reply, dm, status, error, createdAt] = params;
     const result = await automationEvents.insertOne({
+      event_id: eventId,
       owner_user_id: ownerUserId,
       instagram_user_id: instagramUserId,
-      automation_id: automationId,
+      media_id: mediaId,
       comment_id: commentId,
-      event_type: eventType,
+      username,
       keyword,
-      message_text: messageText,
+      reply,
+      dm,
       status,
-      ...(hasError ? { error_message: errorMessage } : {}),
+      error,
       created_at: createdAt
     });
-    return { lastID: result.insertedId, changes: 1 };
+    return { lastID: result.insertedId.toString(), changes: result.acknowledged ? 1 : 0 };
   }
 
-  throw new Error(`Unsupported database write operation: ${sql}`);
+  if (normalized.startsWith('select * from automation_events where owner_user_id')) {
+    const [ownerUserId] = params;
+    const rows = await automationEvents.find({ owner_user_id: ownerUserId }).sort({ created_at: -1 }).toArray();
+    return { rows };
+  }
+
+  if (normalized.startsWith('select * from automation_events where instagram_user_id')) {
+    const [instagramUserId] = params;
+    const rows = await automationEvents.find({ instagram_user_id: instagramUserId }).sort({ created_at: -1 }).toArray();
+    return { rows };
+  }
+
+  throw new Error(`Unsupported database operation: ${sql}`);
 }
 
-async function get(sql, params = []) {
-  const normalized = sql.replace(/\s+/g, ' ').trim().toLowerCase();
-  const { users, instagramAccounts, automations, webhookEvents, automationEvents } = collections();
-
-  if (normalized.startsWith('select count(*) as count from users')) {
-    return { count: await users.countDocuments() };
-  }
-
-  if (normalized === 'select id from users where email = ?') {
-    return users.findOne({ email: String(params[0]).toLowerCase() }, { projection: { id: 1, _id: 0 } });
-  }
-
-  if (normalized === 'select * from users where email = ?') {
-    return users.findOne({ email: String(params[0]).toLowerCase(), _id: { $exists: true } });
-  }
-
-  if (normalized === 'select * from users where id = ?') {
-    return users.findOne({ id: params[0] });
-  }
-
-  if (normalized === 'select count(*) as count from instagram_accounts where owner_user_id = ?') {
-    return { count: await instagramAccounts.countDocuments({ owner_user_id: params[0] }) };
-  }
-
-  if (normalized === 'select count(*) as count from automations where owner_user_id = ? and enabled = 1') {
-    return { count: await automations.countDocuments({ owner_user_id: params[0], enabled: 1 }) };
-  }
-
-  if (normalized === 'select owner_user_id, username from instagram_accounts where owner_user_id = ? and instagram_user_id = ?') {
-    return instagramAccounts.findOne(
-      { owner_user_id: params[0], instagram_user_id: params[1] },
-      { projection: { owner_user_id: 1, username: 1, _id: 0 } }
-    );
-  }
-
-  if (normalized === 'select * from automations where id = ? and owner_user_id = ?') {
-    const idFilter = automationIdFilter(params[0]);
-    if (!idFilter) return null;
-    return automations.findOne({ ...idFilter, owner_user_id: params[1] });
-  }
-
-  if (normalized === 'select event_id from webhook_events where event_id = ?') {
-    return webhookEvents.findOne({ event_id: params[0] }, { projection: { event_id: 1, _id: 0 } });
-  }
-
-  if (normalized === 'select * from instagram_accounts where owner_user_id = ? and instagram_user_id = ?') {
-    return instagramAccounts.findOne({ owner_user_id: params[0], instagram_user_id: params[1] });
-  }
-
-  if (normalized.startsWith('select * from instagram_accounts where instagram_user_id = ? order by expires_at desc limit 1')) {
-    return instagramAccounts.findOne({ instagram_user_id: params[0] }, { sort: { expires_at: -1 } });
-  }
-
-  if (normalized.includes('sum(case when event_type')) {
-    const ownerUserId = params[0];
-    const result = await automationEvents.aggregate([
-      { $match: { owner_user_id: ownerUserId } },
-      { $group: {
-        _id: null,
-        comments: { $sum: { $cond: [{ $eq: ['$event_type', 'comment_received'] }, 1, 0] } },
-        messagesSent: { $sum: { $cond: [{ $and: [{ $eq: ['$event_type', 'private_reply'] }, { $eq: ['$status', 'success'] }] }, 1, 0] } },
-        messagesFailed: { $sum: { $cond: [{ $and: [{ $eq: ['$event_type', 'private_reply'] }, { $eq: ['$status', 'failed'] }] }, 1, 0] } },
-        successfulEvents: { $sum: { $cond: [{ $eq: ['$status', 'success'] }, 1, 0] } }
-      } }
-    ]).toArray();
-    return result[0] || { comments: 0, messagesSent: 0, messagesFailed: 0, successfulEvents: 0 };
-  }
-
-  throw new Error(`Unsupported database read operation: ${sql}`);
+async function getUserById(id) {
+  const { users } = collections();
+  return users.findOne({ id });
 }
 
-async function all(sql, params = []) {
-  const normalized = sql.replace(/\s+/g, ' ').trim().toLowerCase();
-  const { users, instagramAccounts, automations, automationEvents } = collections();
-
-  if (normalized.startsWith('select id, name, email, created_at as createdat from users')) {
-    return users.aggregate([
-      { $sort: { created_at: -1 } },
-      { $project: { _id: 0, id: 1, name: 1, email: 1, createdAt: '$created_at' } }
-    ]).toArray();
-  }
-
-  if (normalized === 'select * from instagram_accounts where owner_user_id = ?') {
-    return instagramAccounts.find({ owner_user_id: params[0] }).toArray();
-  }
-
-  if (normalized.includes('from instagram_accounts') && normalized.includes('select owner_user_id as owneruserid')) {
-    return instagramAccounts.aggregate([{ $project: { _id: 0, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', username: 1, expiresAt: '$expires_at', connectedAt: '$connected_at' } }]).toArray();
-  }
-
-  if (normalized.includes('from automations') && normalized.includes('left join instagram_accounts')) {
-    const ownerUserId = params[0];
-    return automations.aggregate([
-      { $match: { owner_user_id: ownerUserId } },
-      { $sort: { created_at: -1 } },
-      { $lookup: { from: 'instagram_accounts', let: { owner: '$owner_user_id', ig: '$instagram_user_id' }, pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$owner_user_id', '$$owner'] }, { $eq: ['$instagram_user_id', '$$ig'] }] } } }, { $project: { _id: 0, username: 1 } }], as: 'account' } },
-      { $set: { username: { $ifNull: [{ $arrayElemAt: ['$account.username', 0] }, null] } } },
-      { $project: { _id: 0, id: { $ifNull: ['$id', { $toString: '$_id' }] }, ownerUserId: '$owner_user_id', instagramUserId: '$instagram_user_id', keyword: 1, dmMessage: '$dm_message', enabled: 1, mediaId: '$media_id', mediaUrl: '$media_url', createdAt: '$created_at', updatedAt: '$updated_at', username: 1 } }
-    ]).toArray();
-  }
-
-  if (normalized.startsWith('select * from automations where instagram_user_id = ? and enabled = 1')) {
-    return automations.find({ instagram_user_id: params[0], enabled: 1 }).toArray();
-  }
-
-  if (normalized.includes('from automation_events') && normalized.includes('order by created_at desc limit 20')) {
-    const ownerUserId = params[0];
-    return automationEvents.aggregate([
-      { $match: { owner_user_id: ownerUserId } },
-      { $sort: { created_at: -1 } },
-      { $limit: 20 },
-      { $project: { _id: 0, eventType: '$event_type', status: 1, keyword: 1, messageText: '$message_text', errorMessage: '$error_message', createdAt: '$created_at' } }
-    ]).toArray();
-  }
-
-  if (normalized.includes('substr(created_at,1,10)')) {
-    const ownerUserId = params[0];
-    const cutoff = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString();
-    return automationEvents.aggregate([
-      { $match: { owner_user_id: ownerUserId, created_at: { $gte: cutoff } } },
-      { $group: {
-        _id: { $substrBytes: ['$created_at', 0, 10] },
-        comments: { $sum: { $cond: [{ $eq: ['$event_type', 'comment_received'] }, 1, 0] } },
-        messagesSent: { $sum: { $cond: [{ $and: [{ $eq: ['$event_type', 'private_reply'] }, { $eq: ['$status', 'success'] }] }, 1, 0] } },
-        messagesFailed: { $sum: { $cond: [{ $and: [{ $eq: ['$event_type', 'private_reply'] }, { $eq: ['$status', 'failed'] }] }, 1, 0] } }
-      } },
-      { $sort: { _id: 1 } },
-      { $project: { _id: 0, date: '$_id', comments: 1, messagesSent: 1, messagesFailed: 1 } }
-    ]).toArray();
-  }
-
-  throw new Error(`Unsupported database list operation: ${sql}`);
+async function getUserByEmail(email) {
+  const { users } = collections();
+  return users.findOne({ email: String(email).toLowerCase() });
 }
 
-async function consumeRateLimit(key, windowMs, maxRequests) {
-  const { rateLimits } = collections();
-  const now = Date.now();
-  const expiresAt = new Date(now + windowMs);
-  const result = await rateLimits.findOneAndUpdate(
-    { _id: key, expires_at: { $gt: new Date(now) } },
-    { $inc: { count: 1 } },
-    { returnDocument: 'after' }
-  );
-  const document = result && result.value ? result.value : result;
-  if (document) return document.count <= maxRequests;
-  try {
-    await rateLimits.insertOne({ _id: key, count: 1, expires_at: expiresAt });
-    return true;
-  } catch (error) {
-    if (error && error.code === 11000) return false;
-    throw error;
-  }
+async function getInstagramAccounts(ownerUserId) {
+  const { instagramAccounts } = collections();
+  return instagramAccounts.find({ owner_user_id: ownerUserId }).sort({ connected_at: -1 }).toArray();
 }
 
-async function createSession(userId, tokenHash, expiresAt) {
+async function getInstagramAccount(ownerUserId, instagramUserId) {
+  const { instagramAccounts } = collections();
+  return instagramAccounts.findOne({ owner_user_id: ownerUserId, instagram_user_id: instagramUserId });
+}
+
+async function createSession(session) {
   const { sessions } = collections();
-  await sessions.insertOne({ token_hash: tokenHash, user_id: userId, expires_at: expiresAt, created_at: new Date() });
+  await sessions.insertOne(session);
 }
 
 async function getSession(tokenHash) {
   const { sessions } = collections();
-  return sessions.findOne({ token_hash: tokenHash, expires_at: { $gt: new Date() } });
+  return sessions.findOne({ token_hash: tokenHash });
 }
 
 async function refreshSession(tokenHash, expiresAt) {
   const { sessions } = collections();
-  await sessions.updateOne({ token_hash: tokenHash }, { $set: { expires_at: expiresAt } });
+  await sessions.updateOne(
+    { token_hash: tokenHash },
+    { $set: { expires_at: expiresAt, last_seen_at: new Date().toISOString() } }
+  );
 }
 
 async function deleteSession(tokenHash) {
@@ -445,4 +370,16 @@ async function close() {
   if (client) await client.close();
 }
 
-module.exports = { initialize, run, get, all, close, consumeRateLimit, createSession, getSession, refreshSession, deleteSession };
+module.exports = {
+  initialize,
+  run,
+  getUserById,
+  getUserByEmail,
+  getInstagramAccounts,
+  getInstagramAccount,
+  createSession,
+  getSession,
+  refreshSession,
+  deleteSession,
+  close
+};
