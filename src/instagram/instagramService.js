@@ -139,6 +139,73 @@ async function listAccounts(userId) {
   return accounts.map(publicAccount);
 }
 
+async function listReels(ownerUserId, instagramUserId) {
+  const accessToken = await getDecryptedTokenForAccount(ownerUserId, instagramUserId);
+  const items = [];
+  let nextUrl = new URL(`https://graph.instagram.com/${apiVersion}/${instagramUserId}/media`);
+  nextUrl.searchParams.set('fields', 'id,caption,media_type,media_product_type,permalink,timestamp,thumbnail_url');
+  nextUrl.searchParams.set('limit', '50');
+  nextUrl.searchParams.set('access_token', accessToken);
+
+  for (let page = 0; page < 3 && nextUrl; page += 1) {
+    const response = await fetch(nextUrl);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(`Instagram media lookup failed (HTTP ${response.status}): ${metaErrorMessage(data, 'Unable to load Instagram media.')}`);
+      error.statusCode = response.status || 502;
+      error.stage = 'media_lookup';
+      error.metaError = data.error;
+      throw error;
+    }
+    for (const media of Array.isArray(data.data) ? data.data : []) {
+      if (media.media_product_type === 'REELS') items.push({
+        id: String(media.id),
+        caption: String(media.caption || ''),
+        permalink: media.permalink || '',
+        timestamp: media.timestamp || null,
+        thumbnailUrl: media.thumbnail_url || null
+      });
+    }
+    const next = data.paging?.next;
+    nextUrl = next ? new URL(next) : null;
+  }
+  return items;
+}
+
+async function resolveReelUrl(ownerUserId, instagramUserId, reelUrl) {
+  const raw = String(reelUrl || '').trim();
+  if (!raw) return null;
+  let requested;
+  try {
+    requested = new URL(raw);
+  } catch {
+    const error = new Error('Enter a valid Instagram Reel link.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (requested.hostname !== 'instagram.com' && !requested.hostname.endsWith('.instagram.com')) {
+    const error = new Error('The Reel link must be an Instagram URL.');
+    error.statusCode = 400;
+    throw error;
+  }
+  const normalizedPath = requested.pathname.replace(/\\/+$/, '').toLowerCase();
+  const reels = await listReels(ownerUserId, instagramUserId);
+  const match = reels.find((item) => {
+    try {
+      const u = new URL(item.permalink);
+      return u.pathname.replace(/\\/+$/, '').toLowerCase() === normalizedPath;
+    } catch {
+      return false;
+    }
+  });
+  if (!match) {
+    const error = new Error('That Reel could not be found in the connected Instagram account. Make sure the Reel is published on that account and try again.');
+    error.statusCode = 422;
+    throw error;
+  }
+  return match;
+}
+
 async function disconnect(userId, instagramUserId) {
   const result = await db.run('DELETE FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [userId, instagramUserId]);
   if (!result.changes) {
@@ -228,6 +295,8 @@ module.exports = {
   saveAccount,
   subscribeToWebhooks,
   listAccounts,
+  listReels,
+  resolveReelUrl,
   disconnect,
   listAllAccounts,
   getAccount,
