@@ -699,3 +699,40 @@ code{color:#e7eaff!important;background:#171e2d!important}
 
 
 .plan-badge{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 9px;border:1px solid rgba(17,17,17,.12);border-radius:999px;font-size:.72rem;font-weight:700;line-height:1;background:rgba(17,17,17,.04);width:max-content}.plan-badge.paid{background:#111;color:#fff;border-color:#111}
+
+/* Collapsible app navigation + home header */
+.app-sidebar{
+  transform:translateX(-100%);
+  transition:transform .22s ease;
+}
+.app-sidebar.open{transform:translateX(0)}
+.app-main{margin-left:0}
+.app-header{justify-content:space-between}
+.app-header-left{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+.app-header-copy{min-width:0}
+.app-header-logo{
+  display:inline-flex;align-items:center;gap:9px;flex:none;
+  color:var(--ink);font-family:var(--serif);font-size:1.08rem;font-weight:700;
+}
+.app-header-logo:hover{color:var(--ink)}
+.app-header-logo .logo-mark{width:25px;height:25px;border-radius:8px;display:inline-block}
+.menu-button{
+  display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  width:40px;height:40px;border:1px solid var(--line-strong);border-radius:10px;
+  background:#111725;padding:0;cursor:pointer;flex:none;
+}
+.menu-button span{display:block;width:19px;height:2px;background:var(--ink);margin:2.5px 0;border-radius:2px}
+.menu-button:hover{background:#171e2e;border-color:#596680}
+.sidebar-close{display:block}
+.sidebar-backdrop.show{display:block;position:fixed;inset:0;z-index:70;background:rgba(3,5,12,.52)}
+@media(max-width:980px){
+  .app-header{padding:18px 28px}
+  .app-header-copy .eyebrow{display:none}
+}
+@media(max-width:600px){
+  .app-header{min-height:78px;padding:14px 18px;gap:12px}
+  .app-header-left{gap:9px}
+  .app-header-logo span:last-child{display:none}
+  .app-header-copy h1{font-size:1.2rem}
+  .profile-copy{display:none}
+}
