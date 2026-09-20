@@ -10,7 +10,7 @@
   <div class="app-shell">
     <aside class="app-sidebar" id="appSidebar">
       <div class="sidebar-top">
-        <a href="dashboard.html" class="logo" aria-label="Nudge main menu"><span class="logo-mark"></span>Nudge</a>
+        <a href="index.html" class="logo" aria-label="Nudge home"><span class="logo-mark"></span>Nudge</a>
         <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">x</button>
       </div>
       <nav class="app-nav" aria-label="Dashboard navigation">
@@ -28,17 +28,19 @@
     </aside>
     <div class="app-main">
       <header class="app-header">
-        <button class="menu-button" id="sidebarOpen" aria-label="Open menu"><span></span><span></span><span></span></button>
-        <div class="app-header-copy">
-          <p class="eyebrow">Workspace</p>
-          <h1>Automations</h1>
+        <div class="app-header-left">
+          <button class="menu-button" id="sidebarOpen" aria-label="Open navigation menu" aria-expanded="false"><span></span><span></span><span></span></button>
+          <a href="index.html" class="app-header-logo" aria-label="Nudge home"><span class="logo-mark"></span><span>Nudge</span></a>
+          <div class="app-header-copy">
+            <p class="eyebrow">Workspace</p>
+            <h1>Automations</h1>
+          </div>
         </div>
         <div class="profile-area">
-          <div class="profile-copy">
+          <div class="profile-copy"><div class="profile-copy">
             <strong id="userName">Loading...</strong>
             <span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span>
-          </div>
-          
+          </div></div>
         </div>
       </header>
       <main class="app-content">
