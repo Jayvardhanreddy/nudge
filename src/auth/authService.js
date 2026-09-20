@@ -37,6 +37,35 @@ async function authenticate(email, password) {
   return publicUser(user);
 }
 
+function createSessionToken() {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+function hashSessionToken(token) {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+
+async function createSession(userId, expiresAt) {
+  const token = createSessionToken();
+  await db.createSession(userId, hashSessionToken(token), expiresAt);
+  return token;
+}
+
+async function getSessionUser(token) {
+  if (!token) return null;
+  const session = await db.getSession(hashSessionToken(token));
+  if (!session) return null;
+  return getUserById(session.user_id);
+}
+
+async function refreshSession(token, expiresAt) {
+  if (token) await db.refreshSession(hashSessionToken(token), expiresAt);
+}
+
+async function deleteSession(token) {
+  if (token) await db.deleteSession(hashSessionToken(token));
+}
+
 function createToken(user) {
   return require('jsonwebtoken').sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '30d', issuer: 'nudge-app', audience: 'nudge-web' });
 }
@@ -74,4 +103,4 @@ async function registerOAuthUser({ name, email }) {
   return publicUser(user);
 }
 
-module.exports = { register, authenticate, registerOAuthUser, createToken, getUserById, getUserByEmail, listUsers };
+module.exports = { register, authenticate, registerOAuthUser, createToken, createSession, getSessionUser, refreshSession, deleteSession, getUserById, getUserByEmail, listUsers };
