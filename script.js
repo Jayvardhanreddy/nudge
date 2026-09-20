@@ -1,4 +1,23 @@
 // ============================================================
+// Preserve authenticated state on the public landing page
+// ============================================================
+(function () {
+  if (!document.querySelector('.site-header') || document.getElementById('authTabs')) return;
+  var actions = document.querySelector('.header-actions');
+  if (!actions) return;
+  fetch('/api/me', { credentials: 'same-origin' })
+    .then(function (response) {
+      if (!response.ok) return null;
+      return response.json();
+    })
+    .then(function (data) {
+      if (!data || !data.user) return;
+      actions.innerHTML = '<a href="dashboard.html" class="btn btn-ghost">Dashboard</a><a href="settings.html" class="btn btn-primary">Account</a>';
+    })
+    .catch(function () {});
+})();
+
+// ============================================================
 // Mobile nav toggle
 // ============================================================
 (function () {
