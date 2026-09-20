@@ -193,7 +193,7 @@ async function resolveReelUrl(ownerUserId, instagramUserId, reelUrl) {
   const match = reels.find((item) => {
     try {
       const u = new URL(item.permalink);
-      return u.pathname.replace(/\\/+$/, '').toLowerCase() === normalizedPath;
+      return u.pathname.replace(/\/+$/, '').toLowerCase() === normalizedPath;
     } catch {
       return false;
     }
