@@ -734,6 +734,78 @@ function redactSensitiveSupportOutput(reply) {
   return redactSensitiveSupportInput(String(reply || '')).replace(/(?:process\.env|environment variable|system prompt|developer message|internal instructions)\s*[:=]?[^\n]*/gi, '[REDACTED INTERNAL INFORMATION]');
 }
 
+app.post('/api/creator/generate', requireAuth, async (request, response) => {
+  const body = request.body || {};
+  const tool = typeof body.tool === 'string' ? body.tool.trim().toLowerCase() : '';
+  const level = typeof body.level === 'string' ? body.level.trim().toLowerCase() : 'pro';
+  const topic = typeof body.topic === 'string' ? body.topic.trim() : '';
+  const audience = typeof body.audience === 'string' ? body.audience.trim() : '';
+  const format = typeof body.format === 'string' ? body.format.trim() : 'Reel';
+  const tone = typeof body.tone === 'string' ? body.tone.trim() : 'Educational';
+  const length = typeof body.length === 'string' ? body.length.trim() : '30 seconds';
+  const source = typeof body.source === 'string' ? body.source.trim() : '';
+
+  if (!['content', 'script'].includes(tool)) return response.status(400).json({ error: 'Unsupported creator AI tool.' });
+  if (!['beginner', 'pro', 'pro-max'].includes(level)) return response.status(400).json({ error: 'Invalid creator level.' });
+  if (!topic && !source) return response.status(400).json({ error: 'Add a topic or source content first.' });
+  if (topic.length > 500 || source.length > 6000 || audience.length > 300) return response.status(400).json({ error: 'Creator input is too long.' });
+
+  try {
+    const ip = request.ip || request.socket.remoteAddress || 'unknown';
+    if (!(await db.consumeRateLimit(`creator-ai:${ip}`, 60 * 1000, 20))) {
+      response.setHeader('Retry-After', '60');
+      return response.status(429).json({ error: 'Creator AI is busy. Please wait a minute and try again.' });
+    }
+
+    const levelBrief = {
+      beginner: 'Explain the strategy clearly and simply. Use beginner-friendly language, but still produce publish-ready professional copy.',
+      pro: 'Write like an experienced social strategist. Use sharper positioning, specific value, retention structure, proof, objections and a clean CTA.',
+      'pro-max': 'Write like a senior creator strategist and conversion copywriter. Use a strong content thesis, pattern interrupts, audience psychology, specific proof opportunities, retention beats, differentiated positioning and a non-generic CTA. Avoid filler and clichés.'
+    }[level];
+
+    const system = `You are Nudge Creator AI, a professional content strategist for Instagram creators. Generate original, specific, publish-ready work. Never output generic filler, repeated templates, fake statistics, guaranteed growth claims, or vague advice. Adapt meaningfully to the creator level. ${levelBrief} Keep the creator's topic central. Do not invent personal results, credentials, client names, or performance data; use placeholders such as [YOUR RESULT] when proof is needed. For Instagram content, prioritize the first 1-2 seconds, retention, clarity, one core promise, proof, and one CTA. Do not stuff hashtags. Output only the requested deliverable with clear headings.`;
+
+    const user = tool === 'content'
+      ? `Create a professional ${format} package about: ${topic}. Audience: ${audience || 'the target audience for this topic'}. Tone: ${tone}. Creator level: ${level}. Include: 3 distinct hooks, a concise structure, a publish-ready caption, one CTA, and a short note on the strongest hook and why it should work.`
+      : `Create a ${length} Instagram Reel script about: ${topic}. Audience: ${audience || 'the target audience for this topic'}. Creator level: ${level}. Include spoken lines, on-screen text, visual direction, a retention beat, proof placeholder, and one CTA. Make the pacing realistic for ${length}.`;
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      const fallback = tool === 'content'
+        ? `HOOK 1\\nThe mistake most ${audience || 'creators'} make with ${topic}.\\n\\nHOOK 2\\nBefore you post about ${topic}, fix this first.\\n\\nHOOK 3\\nHere is the practical way to approach ${topic}.\\n\\nSTRUCTURE\\nProblem → specific insight → example → proof placeholder → action step → CTA.\\n\\nCAPTION\\nIf you are working on ${topic}, focus on one clear outcome instead of trying to teach everything at once. Show the problem, demonstrate the better approach, then give the viewer one action they can take today.\\n\\nCTA\\nSave this and comment INFO for the checklist.`
+        : `REEL SCRIPT — ${length}\\n\\nHOOK [0–2s]\\n“Before you try ${topic}, watch this.”\\n\\nVALUE [2–20s]\\nGive 2–3 specific points, each paired with a visual example.\\n\\nRETENTION\\nChange the visual or add a proof/example at the midpoint.\\n\\nPROOF\\n[YOUR RESULT / SCREENSHOT / DEMO]\\n\\nCTA\\n“Save this and follow for the next step.”`;
+      return response.json({ output: fallback, mode: 'professional-fallback' });
+    }
+
+    const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
+    const aiResponse = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        input: [
+          { role: 'system', content: system },
+          { role: 'user', content: user + (source ? `\\n\\nSOURCE CONTENT:\\n${source}` : '') }
+        ],
+        max_output_tokens: tool === 'script' ? 900 : 800
+      })
+    });
+    const data = await aiResponse.json().catch(() => ({}));
+    if (!aiResponse.ok) {
+      console.error('Creator AI request failed:', aiResponse.status, data?.error?.message || 'unknown error');
+      return response.status(502).json({ error: 'Creator AI is temporarily unavailable. Please try again.' });
+    }
+    const output = Array.isArray(data.output)
+      ? data.output.flatMap((item) => Array.isArray(item.content) ? item.content : []).map((item) => item.text || '').filter(Boolean).join('\\n').trim()
+      : '';
+    if (!output) return response.status(502).json({ error: 'Creator AI returned an empty result. Please try again.' });
+    return response.json({ output, mode: 'ai', model });
+  } catch (error) {
+    console.error('Creator AI error:', error.message);
+    return response.status(500).json({ error: 'Creator AI is temporarily unavailable. Please try again.' });
+  }
+});
+
 app.post('/api/support/chat', async (request, response) => {
   const rawMessage = typeof request.body?.message === 'string' ? request.body.message.trim() : '';
   if (!rawMessage || rawMessage.length > 1000) return response.status(400).json({ error: 'Enter a message between 1 and 1000 characters.' });
