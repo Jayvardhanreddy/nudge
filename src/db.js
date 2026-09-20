@@ -17,7 +17,8 @@ function collections() {
     webhookEvents: database.collection('webhook_events'),
     automationEvents: database.collection('automation_events'),
     counters: database.collection('counters'),
-    rateLimits: database.collection('rate_limits')
+    rateLimits: database.collection('rate_limits'),
+    sessions: database.collection('sessions')
   };
 }
 
@@ -118,6 +119,8 @@ async function initialize() {
     automationEvents.createIndex({ owner_user_id: 1, created_at: -1 }, { name: 'automation_events_owner_created' }),
     automationEvents.createIndex({ instagram_user_id: 1, created_at: -1 }, { name: 'automation_events_instagram_created' }),
     rateLimits.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'rate_limits_ttl' }),
+    sessions.createIndex({ token_hash: 1 }, { unique: true, name: 'sessions_token_unique' }),
+    sessions.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'sessions_expires_ttl' }),
   ]);
 
   await migrateJsonData();
@@ -418,8 +421,28 @@ async function consumeRateLimit(key, windowMs, maxRequests) {
   }
 }
 
+async function createSession(userId, tokenHash, expiresAt) {
+  const { sessions } = collections();
+  await sessions.insertOne({ token_hash: tokenHash, user_id: userId, expires_at: expiresAt, created_at: new Date() });
+}
+
+async function getSession(tokenHash) {
+  const { sessions } = collections();
+  return sessions.findOne({ token_hash: tokenHash, expires_at: { $gt: new Date() } });
+}
+
+async function refreshSession(tokenHash, expiresAt) {
+  const { sessions } = collections();
+  await sessions.updateOne({ token_hash: tokenHash }, { $set: { expires_at: expiresAt } });
+}
+
+async function deleteSession(tokenHash) {
+  const { sessions } = collections();
+  await sessions.deleteOne({ token_hash: tokenHash });
+}
+
 async function close() {
   if (client) await client.close();
 }
 
-module.exports = { initialize, run, get, all, close, consumeRateLimit };
+module.exports = { initialize, run, get, all, close, consumeRateLimit, createSession, getSession, refreshSession, deleteSession };
