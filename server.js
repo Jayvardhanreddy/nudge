@@ -466,8 +466,8 @@ app.post('/api/automations', requireAuth, async (request, response, next) => {
     }
 
     const result = await db.run(
-      `INSERT INTO automations (owner_user_id, instagram_user_id, keyword, dm_message, enabled, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO automations (owner_user_id, instagram_user_id, keyword, dm_message, enabled, created_at, updated_at, media_id, media_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [request.user.id, targetIgId, trimmedKeyword, trimmedMessage, isEnabled, now, now, selectedMediaId, selectedMediaUrl]
     );
 
@@ -553,14 +553,14 @@ app.patch('/api/automations/:id', requireAuth, async (request, response, next) =
     const now = new Date().toISOString();
     await db.run(
       `UPDATE automations
-       SET instagram_user_id = ?, keyword = ?, dm_message = ?, enabled = ?, updated_at = ?
+       SET instagram_user_id = ?, keyword = ?, dm_message = ?, enabled = ?, updated_at = ?, media_id = ?, media_url = ?
        WHERE id = ? AND owner_user_id = ?`,
       [targetIgId, newKeyword, newMessage, newEnabled, now, automationId, request.user.id, newMediaId, newMediaUrl]
     );
 
     const updated = await db.get(
       `SELECT a.id, a.owner_user_id AS ownerUserId, a.instagram_user_id AS instagramUserId,
-              a.keyword, a.dm_message AS dmMessage, a.enabled, a.created_at AS createdAt,
+              a.keyword, a.dm_message AS dmMessage, a.enabled, a.media_id AS mediaId, a.media_url AS mediaUrl, a.created_at AS createdAt,
               a.updated_at AS updatedAt, i.username
        FROM automations a
        LEFT JOIN instagram_accounts i ON a.owner_user_id = i.owner_user_id AND a.instagram_user_id = i.instagram_user_id
