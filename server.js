@@ -319,6 +319,16 @@ app.get('/api/instagram/accounts', requireAuth, async (request, response, next) 
   }
 });
 
+app.get('/api/instagram/accounts/:instagramUserId/reels', requireAuth, async (request, response, next) => {
+  try {
+    const account = await instagramService.getAccount(request.user.id, request.params.instagramUserId);
+    if (!account) return response.status(404).json({ error: 'Instagram account not found.' });
+    return response.json({ reels: await instagramService.listReels(request.user.id, request.params.instagramUserId) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.delete('/api/instagram/accounts/:instagramUserId', requireAuth, async (request, response, next) => {
   try {
     await instagramService.disconnect(request.user.id, request.params.instagramUserId);
@@ -406,7 +416,7 @@ app.get('/api/automations', requireAuth, async (request, response, next) => {
   try {
     const automations = await db.all(
       `SELECT a.id, a.owner_user_id AS ownerUserId, a.instagram_user_id AS instagramUserId,
-              a.keyword, a.dm_message AS dmMessage, a.enabled, a.created_at AS createdAt,
+              a.keyword, a.dm_message AS dmMessage, a.enabled, a.media_id AS mediaId, a.media_url AS mediaUrl, a.created_at AS createdAt,
               a.updated_at AS updatedAt, i.username
        FROM automations a
        LEFT JOIN instagram_accounts i ON a.owner_user_id = i.owner_user_id AND a.instagram_user_id = i.instagram_user_id
@@ -422,7 +432,7 @@ app.get('/api/automations', requireAuth, async (request, response, next) => {
 
 app.post('/api/automations', requireAuth, async (request, response, next) => {
   try {
-    const { instagramUserId, keyword, dmMessage, enabled } = request.body || {};
+    const { instagramUserId, keyword, dmMessage, enabled, mediaUrl } = request.body || {};
     const trimmedKeyword = typeof keyword === 'string' ? keyword.trim() : '';
     const trimmedMessage = typeof dmMessage === 'string' ? dmMessage.trim() : '';
     const targetIgId = typeof instagramUserId === 'string' ? instagramUserId.trim() : '';
@@ -447,16 +457,23 @@ app.post('/api/automations', requireAuth, async (request, response, next) => {
 
     const now = new Date().toISOString();
     const isEnabled = enabled === false || enabled === 0 ? 0 : 1;
+    let selectedMediaId = null;
+    let selectedMediaUrl = null;
+    if (mediaUrl !== undefined && mediaUrl !== null && String(mediaUrl).trim() !== '') {
+      const media = await instagramService.resolveReelUrl(request.user.id, targetIgId, mediaUrl);
+      selectedMediaId = media.id;
+      selectedMediaUrl = media.permalink;
+    }
 
     const result = await db.run(
       `INSERT INTO automations (owner_user_id, instagram_user_id, keyword, dm_message, enabled, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [request.user.id, targetIgId, trimmedKeyword, trimmedMessage, isEnabled, now, now]
+      [request.user.id, targetIgId, trimmedKeyword, trimmedMessage, isEnabled, now, now, selectedMediaId, selectedMediaUrl]
     );
 
     const created = await db.get(
       `SELECT a.id, a.owner_user_id AS ownerUserId, a.instagram_user_id AS instagramUserId,
-              a.keyword, a.dm_message AS dmMessage, a.enabled, a.created_at AS createdAt,
+              a.keyword, a.dm_message AS dmMessage, a.enabled, a.media_id AS mediaId, a.media_url AS mediaUrl, a.created_at AS createdAt,
               a.updated_at AS updatedAt, i.username
        FROM automations a
        LEFT JOIN instagram_accounts i ON a.owner_user_id = i.owner_user_id AND a.instagram_user_id = i.instagram_user_id
@@ -485,7 +502,7 @@ app.patch('/api/automations/:id', requireAuth, async (request, response, next) =
       return response.status(404).json({ error: 'Automation not found.' });
     }
 
-    const { instagramUserId, keyword, dmMessage, enabled } = request.body || {};
+    const { instagramUserId, keyword, dmMessage, enabled, mediaUrl } = request.body || {};
 
     let targetIgId = existing.instagram_user_id;
     if (typeof instagramUserId === 'string' && instagramUserId.trim() !== '') {
@@ -520,12 +537,25 @@ app.patch('/api/automations/:id', requireAuth, async (request, response, next) =
       newEnabled = enabled === true || enabled === 1 || enabled === '1' ? 1 : 0;
     }
 
+    let newMediaId = existing.media_id || null;
+    let newMediaUrl = existing.media_url || null;
+    if (mediaUrl !== undefined) {
+      if (String(mediaUrl).trim() === '') {
+        newMediaId = null;
+        newMediaUrl = null;
+      } else {
+        const media = await instagramService.resolveReelUrl(request.user.id, targetIgId, mediaUrl);
+        newMediaId = media.id;
+        newMediaUrl = media.permalink;
+      }
+    }
+
     const now = new Date().toISOString();
     await db.run(
       `UPDATE automations
        SET instagram_user_id = ?, keyword = ?, dm_message = ?, enabled = ?, updated_at = ?
        WHERE id = ? AND owner_user_id = ?`,
-      [targetIgId, newKeyword, newMessage, newEnabled, now, automationId, request.user.id]
+      [targetIgId, newKeyword, newMessage, newEnabled, now, automationId, request.user.id, newMediaId, newMediaUrl]
     );
 
     const updated = await db.get(
@@ -637,7 +667,10 @@ app.post('/api/instagram/webhook', async (request, response) => {
           continue;
         }
 
+        const commentMediaId = String(commentVal.media?.id || commentVal.media_id || commentVal.mediaId || '');
+
         for (const auto of automations) {
+          if (auto.media_id && String(auto.media_id) !== commentMediaId) continue;
           if (keywordMatches(commentText, auto.keyword)) {
             console.log(`Comment keyword "${auto.keyword}" matched for comment ID ${commentId}. Sending private reply.`);
             try {
