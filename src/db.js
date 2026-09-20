@@ -407,5 +407,6 @@ module.exports = {
   getSession,
   refreshSession,
   deleteSession,
+  consumeRateLimit,
   close
 };
