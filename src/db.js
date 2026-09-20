@@ -343,6 +343,32 @@ async function getInstagramAccount(ownerUserId, instagramUserId) {
   return instagramAccounts.findOne({ owner_user_id: ownerUserId, instagram_user_id: instagramUserId });
 }
 
+async function consumeRateLimit(key, windowMs, maxRequests) {
+  const { rateLimits } = collections();
+  const now = Date.now();
+  const expiresAt = new Date(now + Number(windowMs || 60000));
+  const normalizedKey = String(key || '').trim();
+  if (!normalizedKey) return true;
+
+  const existing = await rateLimits.findOne({ key: normalizedKey });
+  if (!existing || new Date(existing.expires_at).getTime() <= now) {
+    await rateLimits.updateOne(
+      { key: normalizedKey },
+      { $set: { key: normalizedKey, count: 1, expires_at: expiresAt.toISOString() } },
+      { upsert: true }
+    );
+    return true;
+  }
+
+  if (Number(existing.count || 0) >= Number(maxRequests || 1)) return false;
+
+  await rateLimits.updateOne(
+    { key: normalizedKey },
+    { $inc: { count: 1 } }
+  );
+  return true;
+}
+
 async function createSession(session) {
   const { sessions } = collections();
   await sessions.insertOne(session);
