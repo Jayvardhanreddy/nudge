@@ -6,6 +6,7 @@
   var body = document.body;
 
   var userAccounts = [];
+  var currentAutomations = [];
 
   function closeSidebar() {
     if (!sidebar) return;
@@ -137,17 +138,31 @@
     }
   }
 
-  // Automations Page Logic
+  // Automations Page Logic — local state updates, no full-page refetch after CRUD.
+  function setSaveState(button, busy, label) {
+    if (!button) return;
+    button.disabled = busy;
+    if (busy) button.dataset.originalLabel = button.textContent;
+    button.textContent = busy ? label : (button.dataset.originalLabel || 'Save Automation');
+  }
+
+  function setReelStatus(message, good) {
+    var box = document.getElementById('automationReelStatus');
+    if (!box) return;
+    box.textContent = message;
+    box.style.color = good ? 'var(--teal)' : 'var(--ink-soft)';
+  }
+
   function openAutomationForm(automationToEdit) {
     hideError();
     var formCard = document.getElementById('automationFormCard');
     var heading = document.getElementById('automationFormHeading');
     var idInput = document.getElementById('automationId');
     var select = document.getElementById('automationAccountSelect');
+    var reelInput = document.getElementById('automationReelUrlInput');
     var keywordInput = document.getElementById('automationKeywordInput');
     var messageInput = document.getElementById('automationDmMessageInput');
     var enabledCheckbox = document.getElementById('automationEnabledCheckbox');
-
     if (!formCard || !select) return;
 
     select.innerHTML = '';
@@ -162,20 +177,28 @@
       heading.textContent = 'Edit Automation';
       idInput.value = automationToEdit.id;
       select.value = automationToEdit.instagramUserId;
+      if (reelInput) reelInput.value = automationToEdit.mediaUrl || '';
       keywordInput.value = automationToEdit.keyword;
       messageInput.value = automationToEdit.dmMessage;
-      enabledCheckbox.checked = automationToEdit.enabled === 1;
+      enabledCheckbox.checked = automationToEdit.enabled === 1 || automationToEdit.enabled === true;
+      setReelStatus(automationToEdit.mediaUrl ? 'Targeted Reel: ' + automationToEdit.mediaUrl : 'Any Reel for this account.', !!automationToEdit.mediaUrl);
     } else {
       heading.textContent = 'Create Automation';
       idInput.value = '';
       if (userAccounts.length > 0) select.value = userAccounts[0].id;
+      if (reelInput) reelInput.value = '';
       keywordInput.value = '';
       messageInput.value = '';
       enabledCheckbox.checked = true;
+      setReelStatus('Leave empty to match comments on any Reel for this account.', false);
     }
 
     formCard.hidden = false;
-    formCard.scrollIntoView({ behavior: 'smooth' });
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(function () {
+      var focusTarget = reelInput || keywordInput;
+      if (focusTarget) focusTarget.focus();
+    }, 80);
   }
 
   function closeAutomationForm() {
@@ -188,8 +211,9 @@
     var emptyState = document.getElementById('automationsEmpty');
     var openBtn = document.getElementById('openCreateAutomation');
     var noAccountWarn = document.getElementById('noAccountWarning');
-
     if (!container) return;
+
+    currentAutomations = Array.isArray(automations) ? automations.slice() : [];
 
     if (userAccounts.length === 0) {
       if (noAccountWarn) noAccountWarn.hidden = false;
@@ -201,17 +225,15 @@
 
     if (noAccountWarn) noAccountWarn.hidden = true;
     if (openBtn) openBtn.hidden = false;
-
     container.innerHTML = '';
 
-    if (automations.length === 0) {
+    if (!currentAutomations.length) {
       if (emptyState) emptyState.hidden = false;
       return;
     }
-
     if (emptyState) emptyState.hidden = true;
 
-    automations.forEach(function (item) {
+    currentAutomations.forEach(function (item) {
       var card = document.createElement('div');
       card.className = 'instagram-account-card';
       card.innerHTML =
@@ -220,7 +242,7 @@
           '<strong></strong>' +
           '<span style="margin-top:2px;">Keyword: <code style="background:var(--bg); padding:2px 7px; border-radius:4px; font-weight:600; font-family:monospace; color:var(--ink);"></code></span>' +
           '<span style="margin-top:4px; font-size:0.85rem; color:var(--ink-soft);">DM Message: "<span class="msg-text"></span>"</span>' +
-          '<small style="margin-top:6px;"></small>' +
+          '<small class="automation-scope" style="margin-top:6px;"></small>' +
         '</div>' +
         '<div class="card-actions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
           '<button class="btn btn-ghost toggle-btn" style="padding:7px 12px; font-size:0.8rem;"></button>' +
@@ -228,64 +250,77 @@
           '<button class="btn btn-ghost delete-btn" style="padding:7px 12px; font-size:0.8rem; color:#B4123C; border-color:#FFBAC6;">Delete</button>' +
         '</div>';
 
-      var accountName = item.username ? '@' + item.username : 'Account ' + item.instagramUserId;
-      card.querySelector('strong').textContent = accountName;
+      card.querySelector('strong').textContent = item.username ? '@' + item.username : 'Account ' + item.instagramUserId;
       card.querySelector('code').textContent = item.keyword;
       card.querySelector('.msg-text').textContent = item.dmMessage;
 
-      var statusSmall = card.querySelector('small');
+      var statusSmall = card.querySelector('.automation-scope');
       var toggleBtn = card.querySelector('.toggle-btn');
-      if (item.enabled) {
-        statusSmall.textContent = 'Active';
-        statusSmall.style.color = 'var(--teal)';
-        toggleBtn.textContent = 'Disable';
-      } else {
-        statusSmall.textContent = 'Disabled';
-        statusSmall.style.color = 'var(--ink-soft)';
-        toggleBtn.textContent = 'Enable';
+      statusSmall.textContent = item.mediaUrl ? 'Active • Specific Reel' : (item.enabled ? 'Active • All Reels' : 'Disabled');
+      statusSmall.style.color = item.enabled ? 'var(--teal)' : 'var(--ink-soft)';
+      if (item.mediaUrl) {
+        statusSmall.title = item.mediaUrl;
       }
+      toggleBtn.textContent = item.enabled ? 'Disable' : 'Enable';
 
       toggleBtn.addEventListener('click', async function () {
+        var previous = !!item.enabled;
+        item.enabled = previous ? 0 : 1;
         toggleBtn.disabled = true;
+        statusSmall.textContent = item.enabled ? (item.mediaUrl ? 'Active • Specific Reel' : 'Active • All Reels') : 'Disabled';
+        statusSmall.style.color = item.enabled ? 'var(--teal)' : 'var(--ink-soft)';
+        toggleBtn.textContent = item.enabled ? 'Disable' : 'Enable';
         try {
-          var response = await fetch('/api/automations/' + item.id, {
+          var response = await fetch('/api/automations/' + encodeURIComponent(item.id), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({ enabled: !item.enabled })
+            body: JSON.stringify({ enabled: !!item.enabled })
           });
           var data = await response.json().catch(function () { return {}; });
           if (!response.ok) {
+            item.enabled = previous ? 1 : 0;
+            statusSmall.textContent = item.enabled ? (item.mediaUrl ? 'Active • Specific Reel' : 'Active • All Reels') : 'Disabled';
+            statusSmall.style.color = item.enabled ? 'var(--teal)' : 'var(--ink-soft)';
+            toggleBtn.textContent = item.enabled ? 'Disable' : 'Enable';
             showError(data.error || 'Failed to update automation status.');
-            return;
+          } else if (data.automation) {
+            Object.assign(item, data.automation);
+            showNotice('Automation ' + (item.enabled ? 'enabled.' : 'disabled.'));
           }
-          loadAutomationsPage();
         } catch (err) {
+          item.enabled = previous ? 1 : 0;
+          toggleBtn.textContent = item.enabled ? 'Disable' : 'Enable';
+          statusSmall.textContent = item.enabled ? (item.mediaUrl ? 'Active • Specific Reel' : 'Active • All Reels') : 'Disabled';
+          statusSmall.style.color = item.enabled ? 'var(--teal)' : 'var(--ink-soft)';
           showError('Unable to update automation.');
         } finally {
           toggleBtn.disabled = false;
         }
       });
 
-      card.querySelector('.edit-btn').addEventListener('click', function () {
-        openAutomationForm(item);
-      });
+      card.querySelector('.edit-btn').addEventListener('click', function () { openAutomationForm(item); });
 
       card.querySelector('.delete-btn').addEventListener('click', async function () {
-        if (!confirm('Are you sure you want to delete this automation?')) return;
+        if (!confirm('Delete this automation?')) return;
+        var deleteBtn = card.querySelector('.delete-btn');
+        deleteBtn.disabled = true;
         try {
-          var response = await fetch('/api/automations/' + item.id, {
+          var response = await fetch('/api/automations/' + encodeURIComponent(item.id), {
             method: 'DELETE',
             credentials: 'same-origin'
           });
           if (!response.ok) {
             var data = await response.json().catch(function () { return {}; });
             showError(data.error || 'Failed to delete automation.');
+            deleteBtn.disabled = false;
             return;
           }
+          currentAutomations = currentAutomations.filter(function (a) { return String(a.id) !== String(item.id); });
+          renderAutomations(currentAutomations);
           showNotice('Automation deleted.');
-          loadAutomationsPage();
         } catch (err) {
+          deleteBtn.disabled = false;
           showError('Unable to delete automation.');
         }
       });
@@ -297,28 +332,26 @@
   async function loadAutomationsPage() {
     var container = document.getElementById('automationsList');
     if (!container) return;
-
     try {
-      var accRes = await fetch('/api/instagram/accounts', { credentials: 'same-origin' });
+      var [accRes, autoRes] = await Promise.all([
+        fetch('/api/instagram/accounts', { credentials: 'same-origin' }),
+        fetch('/api/automations', { credentials: 'same-origin' })
+      ]);
       var accData = await accRes.json().catch(function () { return {}; });
-      if (!accRes.ok) {
-        if (accRes.status === 401) window.location.replace('login.html?tab=login');
-        else showError(accData.error || 'Unable to load Instagram accounts.');
-        return;
-      }
-      userAccounts = accData.accounts || [];
-
-      if (userAccounts.length === 0) {
-        renderAutomations([]);
-        return;
-      }
-
-      var autoRes = await fetch('/api/automations', { credentials: 'same-origin' });
       var autoData = await autoRes.json().catch(function () { return {}; });
+      if (accRes.status === 401 || autoRes.status === 401) {
+        window.location.replace('login.html?tab=login');
+        return;
+      }
+      if (!accRes.ok) {
+        showError(accData.error || 'Unable to load Instagram accounts.');
+        return;
+      }
       if (!autoRes.ok) {
         showError(autoData.error || 'Unable to load automations.');
         return;
       }
+      userAccounts = accData.accounts || [];
       renderAutomations(autoData.automations || []);
     } catch (err) {
       showError('Unable to load automations.');
@@ -341,50 +374,54 @@
 
       var id = document.getElementById('automationId').value;
       var instagramUserId = document.getElementById('automationAccountSelect').value;
+      var reelUrl = (document.getElementById('automationReelUrlInput') || {}).value || '';
+      reelUrl = reelUrl.trim();
       var keyword = document.getElementById('automationKeywordInput').value.trim();
       var dmMessage = document.getElementById('automationDmMessageInput').value.trim();
       var enabled = document.getElementById('automationEnabledCheckbox').checked;
       var saveBtn = document.getElementById('saveAutomationBtn');
 
-      if (!instagramUserId) {
-        showError('Please select an Instagram account.');
-        return;
-      }
-      if (!keyword) {
-        showError('Keyword cannot be empty.');
-        return;
-      }
-      if (!dmMessage) {
-        showError('DM Message cannot be empty.');
+      if (!instagramUserId) { showError('Please select an Instagram account.'); return; }
+      if (!keyword) { showError('Keyword cannot be empty.'); return; }
+      if (!dmMessage) { showError('DM Message cannot be empty.'); return; }
+      if (reelUrl && !/^https?:\/\/([^/]+\.)?instagram\.com\//i.test(reelUrl)) {
+        showError('Enter a valid Instagram Reel link.');
         return;
       }
 
-      saveBtn.disabled = true;
+      setSaveState(saveBtn, true, id ? 'Saving changes…' : 'Creating…');
       try {
         var url = id ? '/api/automations/' + encodeURIComponent(id) : '/api/automations';
         var method = id ? 'PATCH' : 'POST';
-
         var response = await fetch(url, {
           method: method,
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ instagramUserId: instagramUserId, keyword: keyword, dmMessage: dmMessage, enabled: enabled })
+          body: JSON.stringify({ instagramUserId: instagramUserId, keyword: keyword, dmMessage: dmMessage, enabled: enabled, mediaUrl: reelUrl })
         });
-
         var data = await response.json().catch(function () { return {}; });
-
         if (!response.ok) {
           showError(data.error || 'Failed to save automation.');
           return;
         }
 
+        var saved = data.automation;
+        if (saved) {
+          if (id) {
+            currentAutomations = currentAutomations.map(function (item) {
+              return String(item.id) === String(id) ? saved : item;
+            });
+          } else {
+            currentAutomations.unshift(saved);
+          }
+          renderAutomations(currentAutomations);
+        }
         closeAutomationForm();
         showNotice(id ? 'Automation updated successfully.' : 'Automation created successfully.');
-        loadAutomationsPage();
       } catch (err) {
         showError('Unable to save automation.');
       } finally {
-        saveBtn.disabled = false;
+        setSaveState(saveBtn, false, '');
       }
     });
   }
