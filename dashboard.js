@@ -11,11 +11,13 @@
   function closeSidebar() {
     if (!sidebar) return;
     sidebar.classList.remove('open');
+    if (openButton) openButton.setAttribute('aria-expanded', 'false');
     if (backdrop) backdrop.classList.remove('show');
   }
 
   if (openButton) openButton.addEventListener('click', function () {
     sidebar.classList.add('open');
+    openButton.setAttribute('aria-expanded', 'true');
     backdrop.classList.add('show');
   });
   if (closeButton) closeButton.addEventListener('click', closeSidebar);
