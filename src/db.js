@@ -333,6 +333,11 @@ async function getUserByEmail(email) {
   return users.findOne({ email: String(email).toLowerCase() });
 }
 
+async function listUsers() {
+  const { users } = collections();
+  return users.find({}).sort({ created_at: -1 }).toArray();
+}
+
 async function getInstagramAccounts(ownerUserId) {
   const { instagramAccounts } = collections();
   return instagramAccounts.find({ owner_user_id: ownerUserId }).sort({ connected_at: -1 }).toArray();
@@ -401,6 +406,7 @@ module.exports = {
   run,
   getUserById,
   getUserByEmail,
+  listUsers,
   getInstagramAccounts,
   getInstagramAccount,
   createSession,
