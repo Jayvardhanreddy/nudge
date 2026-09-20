@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nudge Pricing</title><meta name="description" content="Nudge Instagram automation plans and subscription pricing.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="app-body" data-page="pricing">
+<div class="app-shell">
+<aside class="app-sidebar" id="appSidebar">
+<div class="sidebar-top"><a href="dashboard.html" class="logo" aria-label="Nudge main menu"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose" aria-label="Close menu">×</button></div>
+<nav class="app-nav" aria-label="Dashboard navigation">
+<a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a>
+<a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a>
+<a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a>
+<a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a>
+<a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a>
+<a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">$</span>Creator Toolkit</a>
+<a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a>
+<a href="pricing.html" data-nav="pricing" class="active"><span class="nav-icon">₹</span>Pricing</a>
+<a href="help.html" data-nav="help"><span class="nav-icon">?</span>Help Desk</a>
+</nav>
+<div class="sidebar-foot"><p>Instagram automation for creators.</p><a href="index.html">Back to website</a></div>
+</aside>
+<div class="app-main">
+<header class="app-header"><button class="menu-button" id="sidebarOpen" aria-label="Open menu"><span></span><span></span><span></span></button><div class="app-header-copy"><p class="eyebrow">Workspace</p><h1>Pricing</h1></div><div class="profile-area"><div class="profile-copy"><strong>Plans</strong><span>Choose what fits your workflow</span></div></div></header>
+<main class="app-content">
+<section class="accounts-heading"><div><p class="eyebrow">Nudge plans</p><h2>Choose your plan</h2><p>Start free, then upgrade through secure Razorpay checkout when you need more capacity.</p></div></section>
+<div class="pricing-toggle" id="pricingToggle"><button class="active" data-cycle="monthly">Monthly</button><button data-cycle="annual">Annual <span class="save">— save up to 20%</span></button></div>
+<div class="pricing-grid">
+<div class="plan"><div class="plan-name">Free</div><div class="plan-price">₹0<span>/mo</span></div><p class="plan-desc">Try Nudge before subscribing.</p><a href="dashboard.html" class="btn btn-ghost btn-block">Current free plan</a><ul class="plan-features"><li><span class="check">✓</span>300 DMs/mo</li><li><span class="check">✓</span>1 Instagram account</li><li><span class="check">✓</span>3 active automations</li><li><span class="check">✓</span>100 AI credits/mo</li></ul></div>
+<div class="plan popular"><div class="plan-tag">Creator</div><div class="plan-name">Creator</div><div class="plan-price price-monthly">₹299<span>/mo</span></div><div class="plan-price price-annual" style="display:none">₹249<span>/mo, billed yearly</span></div><p class="plan-desc">For creators automating daily conversations.</p><a href="billing.html?plan=creator&billing=monthly" data-plan-button="creator" class="btn btn-accent btn-block">Get Creator</a><ul class="plan-features"><li><span class="check">✓</span>5,000 DMs/mo</li><li><span class="check">✓</span>5 Instagram accounts</li><li><span class="check">✓</span>20 active automations</li><li><span class="check">✓</span>2,000 AI credits/mo</li><li><span class="check">✓</span>Advanced creator tools</li></ul></div>
+<div class="plan"><div class="plan-name">Growth</div><div class="plan-price price-monthly">₹699<span>/mo</span></div><div class="plan-price price-annual" style="display:none">₹579<span>/mo, billed yearly</span></div><p class="plan-desc">For growing creators and small teams.</p><a href="billing.html?plan=growth&billing=monthly" data-plan-button="growth" class="btn btn-ghost btn-block">Get Growth</a><ul class="plan-features"><li><span class="check">✓</span>20,000 DMs/mo</li><li><span class="check">✓</span>10 Instagram accounts</li><li><span class="check">✓</span>100 active automations</li><li><span class="check">✓</span>10,000 AI credits/mo</li><li><span class="check">✓</span>Advanced creator tools</li></ul></div>
+<div class="plan"><div class="plan-name">Scale</div><div class="plan-price price-monthly">₹1,499<span>/mo</span></div><div class="plan-price price-annual" style="display:none">₹1,199<span>/mo, billed yearly</span></div><p class="plan-desc">For agencies and high-volume operators.</p><a href="billing.html?plan=scale&billing=monthly" data-plan-button="scale" class="btn btn-ghost btn-block">Get Scale</a><ul class="plan-features"><li><span class="check">✓</span>75,000 DMs/mo</li><li><span class="check">✓</span>20 Instagram accounts</li><li><span class="check">✓</span>Unlimited active automations</li><li><span class="check">✓</span>30,000 AI credits/mo</li><li><span class="check">✓</span>Advanced creator tools</li></ul></div>
+</div>
+<div class="activity-card" style="margin-top:24px"><div class="card-heading"><div><h2>How purchase works</h2><p>Choose a paid plan → sign in if needed → Razorpay opens → complete payment → Nudge verifies the payment and activates the subscription.</p></div></div></div>
+</main></div></div><div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<script src="dashboard.js"></script>
+<script>
+(function(){var t=document.getElementById('pricingToggle');if(!t)return;t.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var cycle=b.getAttribute('data-cycle');t.querySelectorAll('button').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('.price-monthly').forEach(function(x){x.style.display=cycle==='monthly'?'':'none'});document.querySelectorAll('.price-annual').forEach(function(x){x.style.display=cycle==='annual'?'':'none'});document.querySelectorAll('[data-plan-button]').forEach(function(x){var p=x.getAttribute('data-plan-button');x.href='billing.html?plan='+encodeURIComponent(p)+'&billing='+cycle})})})();
+</script>
+</body></html>
