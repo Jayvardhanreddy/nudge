@@ -1,250 +1,250 @@
 // ============================================================
-// Preserve authenticated state on the public landing page
+// Comment2DM — Client Core Script
+// Persistent Auth, UI Toggles & Form Handlers
 // ============================================================
+
 (function () {
-  if (!document.querySelector('.site-header') || document.getElementById('authTabs')) return;
-  var actions = document.querySelector('.header-actions');
-  if (!actions) return;
-  fetch('/api/me', { credentials: 'same-origin' })
-    .then(function (response) {
-      if (!response.ok) return null;
-      return response.json();
-    })
-    .then(function (data) {
-      if (!data || !data.user) return;
-      actions.innerHTML = '<a href="dashboard.html" class="btn btn-ghost">Dashboard</a><a href="settings.html" class="btn btn-primary">Account</a>';
-    })
-    .catch(function () {});
-})();
+  // Helper: get authorization headers including fallback localStorage token
+  window.getAuthHeaders = function (extraHeaders = {}) {
+    const token = localStorage.getItem('comment2dm_token') || localStorage.getItem('nudge_token');
+    const headers = { ...extraHeaders };
+    if (token) {
+      headers['Authorization'] = 'Bearer ' + token;
+    }
+    return headers;
+  };
 
-// ============================================================
-// Mobile nav toggle
-// ============================================================
-(function () {
-  var toggle = document.getElementById('navToggle');
-  var header = document.querySelector('.site-header');
-  if (!toggle || !header) return;
-  toggle.addEventListener('click', function () {
-    header.classList.toggle('nav-open');
-  });
-  document.querySelectorAll('.main-nav a').forEach(function (link) {
-    link.addEventListener('click', function () { header.classList.remove('nav-open'); });
-  });
-})();
-
-// ============================================================
-// FAQ accordion
-// ============================================================
-(function () {
-  var items = document.querySelectorAll('.faq-item');
-  items.forEach(function (item) {
-    var q = item.querySelector('.faq-q');
-    var a = item.querySelector('.faq-a');
-    if (!q || !a) return;
-    q.addEventListener('click', function () {
-      var isOpen = item.classList.contains('open');
-      items.forEach(function (other) {
-        other.classList.remove('open');
-        var otherA = other.querySelector('.faq-a');
-        if (otherA) otherA.style.maxHeight = null;
-      });
-      if (!isOpen) {
-        item.classList.add('open');
-        a.style.maxHeight = a.scrollHeight + 'px';
-      }
-    });
-  });
-})();
-
-// ============================================================
-// Pricing monthly / annual toggle
-// ============================================================
-(function () {
-  var wrap = document.getElementById('pricingToggle');
-  if (!wrap) return;
-  var buttons = wrap.querySelectorAll('button');
-  buttons.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      buttons.forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      var cycle = btn.getAttribute('data-cycle');
-      document.querySelectorAll('.price-monthly').forEach(function (el) {
-        el.style.display = cycle === 'monthly' ? '' : 'none';
-      });
-      document.querySelectorAll('.price-annual').forEach(function (el) {
-        el.style.display = cycle === 'annual' ? '' : 'none';
-      });
-      document.querySelectorAll('[data-plan-button]').forEach(function (link) {
-        var plan = link.getAttribute('data-plan-button');
-        link.href = 'billing.html?plan=' + encodeURIComponent(plan) + '&billing=' + cycle;
-      });
-    });
-  });
-})();
-
-// ============================================================
-// Login / signup page: tab switching + basic client-side validation
-// ============================================================
-(function () {
-  var tabs = document.getElementById('authTabs');
-  if (!tabs) return;
-
-  var loginForm = document.getElementById('loginForm');
-  var signupForm = document.getElementById('signupForm');
-  var errorBox = document.getElementById('formError');
-
-  function showTab(name) {
-    var isLogin = name === 'login';
-    loginForm.style.display = isLogin ? '' : 'none';
-    signupForm.style.display = isLogin ? 'none' : '';
-    tabs.querySelectorAll('button').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-tab') === name);
-    });
-    if (errorBox) { errorBox.classList.remove('show'); errorBox.textContent = ''; }
-  }
-
-  function setTabFromUrl(name) {
-    var tab = name === 'signup' ? 'signup' : 'login';
-    showTab(tab);
-    return tab;
-  }
-
-  tabs.querySelectorAll('button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var tab = setTabFromUrl(b.getAttribute('data-tab'));
-      var url = new URL(window.location.href);
-      url.searchParams.set('tab', tab);
-      window.history.replaceState({}, '', url);
-    });
-  });
-
-  document.querySelectorAll('[data-switch]').forEach(function (link) {
-    link.addEventListener('click', function (e) {
-      e.preventDefault();
-      var tab = setTabFromUrl(link.getAttribute('data-switch'));
-      var url = new URL(window.location.href);
-      url.searchParams.set('tab', tab);
-      window.history.replaceState({}, '', url);
-    });
-  });
-
-  // Explicitly initialize the form for every URL state. The markup defaults to login.
-  var params = new URLSearchParams(window.location.search);
-  setTabFromUrl(params.get('tab'));
-
-  function showError(message) {
-    if (!errorBox) return;
-    errorBox.textContent = message;
-    errorBox.classList.add('show');
-  }
-
-  async function submitAuth(url, payload) {
-    var response;
+  // Helper: check session and redirect if already authenticated
+  async function checkSession() {
     try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload)
+      const response = await fetch('/api/me', {
+        headers: window.getAuthHeaders(),
+        credentials: 'same-origin'
       });
-    } catch (error) {
-      throw new Error('Unable to reach the authentication server. Please check your internet connection and try again.');
-    }
-    var data = await response.json().catch(function () { return {}; });
-    if (!response.ok) throw new Error(data.error || 'Unable to complete the request.');
-    return data;
+      if (response.ok) {
+        const data = await response.json().catch(() => ({}));
+        if (data.user) {
+          // If on login page, redirect to dashboard
+          if (window.location.pathname.endsWith('login.html')) {
+            window.location.replace('dashboard.html');
+            return;
+          }
+          // If on landing page, update header actions
+          const headerActions = document.querySelector('.header-actions');
+          if (headerActions) {
+            headerActions.innerHTML = '<a href="dashboard.html" class="btn btn-ghost">Dashboard</a><a href="settings.html" class="btn btn-primary">Account</a>';
+          }
+        }
+      } else {
+        // If unauthenticated on a protected app page, redirect to login
+        if (document.body.classList.contains('app-body') && 
+            !window.location.pathname.endsWith('login.html') && 
+            !window.location.pathname.endsWith('index.html') &&
+            !window.location.pathname.endsWith('pricing.html') &&
+            !window.location.pathname.endsWith('privacy.html') &&
+            !window.location.pathname.endsWith('terms.html') &&
+            !window.location.pathname.endsWith('refund.html') &&
+            !window.location.pathname.endsWith('contact.html') &&
+            !window.location.pathname.endsWith('404.html')) {
+          localStorage.removeItem('comment2dm_token');
+          window.location.replace('login.html?tab=login');
+        }
+      }
+    } catch (e) {}
   }
 
-  function continueToSelectedPlan() {
-    var q = new URLSearchParams(window.location.search);
-    var plan = q.get('plan');
-    if (!plan || plan === 'free') {
-      window.location.replace('dashboard.html');
-      return;
-    }
-    var billing = q.get('billing') === 'annual' ? 'annual' : 'monthly';
-    // Authentication must never create a subscription. The dedicated
-    // billing page performs exactly one checkout initialization.
-    window.location.replace('billing.html?plan=' + encodeURIComponent(plan) + '&billing=' + billing);
+  checkSession();
+
+  // Mobile navigation drawer toggle for public landing pages
+  const navToggle = document.getElementById('navToggle');
+  const siteHeader = document.querySelector('.site-header');
+  if (navToggle && siteHeader) {
+    navToggle.addEventListener('click', function () {
+      siteHeader.classList.toggle('nav-open');
+    });
   }
 
-  loginForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var email = document.getElementById('loginEmail').value.trim();
-    var password = document.getElementById('loginPassword').value;
-    if (!email || !password) {
-      showError('Enter your email and password to continue.');
-      return;
-    }
-    errorBox.classList.remove('show');
-    submitAuth('/api/auth/login', { email: email, password: password })
-      .then(function () { var q = new URLSearchParams(window.location.search); if (q.get('connect') === 'instagram') { window.location.replace('/api/instagram/authorize'); return; } continueToSelectedPlan(); })
-      .catch(function (error) { showError(error.message); });
-  });
+  // Auth Tabs on login.html
+  window.switchAuthTab = function (tab) {
+    const isLogin = tab === 'login';
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const subtitle = document.getElementById('authSubtitle');
+    const tabs = document.querySelectorAll('.auth-tab-btn');
+    const errorBox = document.getElementById('formError');
 
-  signupForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var name = document.getElementById('signupName').value.trim();
-    var email = document.getElementById('signupEmail').value.trim();
-    var password = document.getElementById('signupPassword').value;
-    var terms = signupForm.querySelector('[name="terms"]').checked;
-    if (!name || !email || !password) {
-      showError('Fill in every field to create your account.');
-      return;
-    }
-    if (password.length < 8) {
-      showError('Password needs to be at least 8 characters.');
-      return;
-    }
-    if (!terms) {
-      showError('You need to accept the Terms & Privacy Policy to continue.');
-      return;
-    }
-    errorBox.classList.remove('show');
-    submitAuth('/api/auth/signup', { name: name, email: email, password: password })
-      .then(function () { var q = new URLSearchParams(window.location.search); if (q.get('connect') === 'instagram') { window.location.href = '/api/instagram/authorize'; return; } return continueToSelectedPlan(); })
-      .catch(function (error) { showError(error.message); });
-  });
-})();
+    if (errorBox) errorBox.classList.remove('show');
 
+    if (loginForm && signupForm) {
+      loginForm.style.display = isLogin ? 'block' : 'none';
+      signupForm.style.display = isLogin ? 'none' : 'block';
+    }
 
-// ============================================================
-// OAuth buttons
-// ============================================================
-(function () {
-  var buttons = document.querySelectorAll('.oauth-btn');
-  if (!buttons.length) return;
-  var errorBox = document.getElementById('formError');
-  function showAuthError(message) {
-    if (!errorBox) return;
-    errorBox.textContent = message;
-    errorBox.classList.add('show');
+    if (subtitle) {
+      subtitle.textContent = isLogin ? 'Log in to manage your automations' : 'Create your free account in 30 seconds';
+    }
+
+    tabs.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+    });
+
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url);
+  };
+
+  const authTabsContainer = document.getElementById('authTabs');
+  if (authTabsContainer) {
+    authTabsContainer.addEventListener('click', function (e) {
+      const btn = e.target.closest('.auth-tab-btn');
+      if (btn) switchAuthTab(btn.getAttribute('data-tab'));
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'signup') {
+      switchAuthTab('signup');
+    }
+    if (params.get('auth_error')) {
+      const errorBox = document.getElementById('formError');
+      if (errorBox) {
+        errorBox.textContent = params.get('auth_error');
+        errorBox.classList.add('show');
+      }
+    }
   }
-  buttons.forEach(function (button) {
-    button.addEventListener('click', async function () {
-      var label = (button.textContent || '').toLowerCase();
-      button.disabled = true;
+
+  function showAuthError(msg) {
+    const errorBox = document.getElementById('formError');
+    if (errorBox) {
+      errorBox.textContent = msg;
+      errorBox.classList.add('show');
+    }
+  }
+
+  // Handle Login submission
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const submitBtn = document.getElementById('loginSubmitBtn');
+
+      if (!email || !password) {
+        showAuthError('Please enter your email and password.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Signing in…</span>';
+
       try {
-        if (label.indexOf('google') !== -1) {
-          window.location.href = '/api/auth/google';
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ email, password })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          showAuthError(data.error || 'Invalid email or password.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Log in to Comment2DM</span>';
           return;
         }
-        var session = await fetch('/api/me', { credentials: 'same-origin' });
-        if (session.ok) {
-          window.location.href = '/api/instagram/authorize';
-          return;
+
+        if (data.sessionToken) {
+          localStorage.setItem('comment2dm_token', data.sessionToken);
         }
-        var url = new URL(window.location.href);
-        url.searchParams.set('tab', 'signup');
-        url.searchParams.set('connect', 'instagram');
-        window.location.href = url.toString();
-      } catch (error) {
-        showAuthError('Unable to start the sign-in flow. Please try again.');
-        button.disabled = false;
+
+        window.location.replace('dashboard.html');
+      } catch (err) {
+        showAuthError('Unable to sign in right now. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Log in to Comment2DM</span>';
       }
     });
-  });
-  var params = new URLSearchParams(window.location.search);
-  var authError = params.get('auth_error');
-  if (authError) showAuthError(authError);
+  }
+
+  // Handle Signup submission
+  const signupForm = document.getElementById('signupForm');
+  if (signupForm) {
+    signupForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const terms = document.getElementById('signupTerms').checked;
+      const submitBtn = document.getElementById('signupSubmitBtn');
+
+      if (!name || name.length < 2) {
+        showAuthError('Please enter your full name.');
+        return;
+      }
+      if (!email) {
+        showAuthError('Please enter a valid email address.');
+        return;
+      }
+      if (!password || password.length < 6) {
+        showAuthError('Password must be at least 6 characters.');
+        return;
+      }
+      if (!terms) {
+        showAuthError('Please agree to the Terms of Service & Privacy Policy.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Creating account…</span>';
+
+      try {
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ name, email, password })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          showAuthError(data.error || 'Failed to create account.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Create Free Comment2DM Account</span>';
+          return;
+        }
+
+        if (data.sessionToken) {
+          localStorage.setItem('comment2dm_token', data.sessionToken);
+        }
+
+        window.location.replace('dashboard.html');
+      } catch (err) {
+        showAuthError('Unable to create account right now. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Create Free Comment2DM Account</span>';
+      }
+    });
+  }
+
+  // Pricing monthly / annual toggle
+  const pricingToggle = document.getElementById('pricingToggle');
+  if (pricingToggle) {
+    const buttons = pricingToggle.querySelectorAll('button');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cycle = btn.getAttribute('data-cycle');
+        document.querySelectorAll('.price-monthly').forEach(el => {
+          el.style.display = cycle === 'monthly' ? '' : 'none';
+        });
+        document.querySelectorAll('.price-annual').forEach(el => {
+          el.style.display = cycle === 'annual' ? '' : 'none';
+        });
+        document.querySelectorAll('[data-plan-button]').forEach(link => {
+          const plan = link.getAttribute('data-plan-button');
+          link.href = 'billing.html?plan=' + encodeURIComponent(plan) + '&billing=' + cycle;
+        });
+      });
+    });
+  }
 })();

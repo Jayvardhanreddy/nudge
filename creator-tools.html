@@ -1,228 +1,286 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Creator Toolkit - Nudge</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Creator Studio AI — Comment2DM</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .studio-tabs { display:flex; gap:4px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:5px; flex-wrap:wrap; }
+    .studio-tab { padding:8px 16px; border-radius:9px; border:none; background:transparent; color:rgba(255,255,255,0.45); font-size:0.84rem; font-weight:500; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+    .studio-tab.active { background:rgba(99,102,241,0.2); color:#818cf8; }
+    .studio-panel { display:none; animation:fadeIn 0.25s ease; }
+    .studio-panel.active { display:block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+    .glass-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:24px; margin-top:16px; }
+    .form-row { margin-bottom:16px; }
+    .form-row label { display:block; font-size:0.8rem; color:rgba(255,255,255,0.45); margin-bottom:6px; font-weight:500; }
+    .form-input { width:100%; padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#f1f5f9; font-size:0.88rem; outline:none; transition:border 0.2s; box-sizing:border-box; font-family:inherit; }
+    .form-input:focus { border-color:#6366f1; }
+    select.form-input { cursor:pointer; }
+    select.form-input option { background:#111116; }
+    .ai-btn { display:inline-flex; align-items:center; gap:8px; padding:11px 22px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; border-radius:12px; color:#fff; font-size:0.9rem; font-weight:600; cursor:pointer; transition:opacity 0.2s; }
+    .ai-btn:hover { opacity:0.85; }
+    .ai-btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg);} }
+    .result-card { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:16px; margin-top:10px; position:relative; }
+    .copy-btn { position:absolute; top:12px; right:12px; padding:4px 10px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.25); border-radius:6px; color:#818cf8; font-size:0.72rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .copy-btn:hover { background:rgba(99,102,241,0.3); }
+    .result-text { font-size:0.88rem; color:#e2e8f0; line-height:1.6; white-space:pre-wrap; word-break:break-word; padding-right:60px; }
+    .credit-note { font-size:0.76rem; color:rgba(255,255,255,0.3); margin-top:8px; }
+    .credits-badge { background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.2); border-radius:20px; padding:5px 14px; font-size:0.8rem; color:#818cf8; font-weight:500; }
+    /* Rate Calculator */
+    .rate-result { text-align:center; padding:24px; }
+    .rate-big { font-size:4rem; font-weight:800; line-height:1; }
+    .rate-big.green { color:#10b981; }
+    .rate-big.yellow { color:#f59e0b; }
+    .rate-big.red { color:#f43f5e; }
+    .benchmark-bar { height:10px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; margin:8px 0; }
+    .benchmark-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,#6366f1,#10b981); transition:width 0.8s ease; }
+    /* UTM builder */
+    .utm-output { background:rgba(9,9,11,0.5); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; font-family:monospace; font-size:0.84rem; color:#818cf8; word-break:break-all; margin-top:12px; }
+    .utm-history-item { padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.8rem; color:rgba(255,255,255,0.5); display:flex; align-items:center; justify-content:space-between; }
+    .utm-history-item:last-child { border-bottom:none; }
+    /* Ideas */
+    .ideas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-top:16px; }
+    .idea-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:18px; }
+    .idea-format { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:600; margin-bottom:10px; }
+    .idea-format.reel { background:rgba(99,102,241,0.15); color:#818cf8; }
+    .idea-format.carousel { background:rgba(245,158,11,0.12); color:#f59e0b; }
+    .idea-format.story { background:rgba(16,185,129,0.12); color:#10b981; }
+    .idea-format.static { background:rgba(236,72,153,0.12); color:#ec4899; }
+    .idea-title { font-size:0.9rem; font-weight:600; color:#f1f5f9; margin-bottom:6px; }
+    .idea-hook { font-size:0.8rem; color:rgba(255,255,255,0.5); line-height:1.5; }
+    .idea-meta { font-size:0.72rem; color:rgba(255,255,255,0.3); margin-top:8px; }
+    /* Slider */
+    input[type=range] { width:100%; accent-color:#6366f1; }
+    .slider-val { display:inline-block; background:rgba(99,102,241,0.15); color:#818cf8; border-radius:6px; padding:2px 10px; font-size:0.82rem; font-weight:600; margin-left:8px; }
+  </style>
 </head>
 <body class="app-body" data-page="creator-tools">
-<div class="app-shell">
-<aside class="app-sidebar" id="appSidebar">
-  <div class="sidebar-top"><a href="index.html" class="logo" aria-label="Nudge home"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose" aria-label="Close menu">×</button></div>
-  <nav class="app-nav" aria-label="Dashboard navigation">
-    <a href="dashboard.html"><span class="nav-icon">+</span>Dashboard</a>
-    <a href="instagram-accounts.html"><span class="nav-icon">i</span>Instagram Accounts</a>
-    <a href="automations.html"><span class="nav-icon">a</span>Automations</a>
-    <a href="messages.html"><span class="nav-icon">m</span>Messages</a>
-    <a href="analytics.html"><span class="nav-icon">%</span>Analytics</a>
-    <a href="creator-tools.html" class="active"><span class="nav-icon">$</span>Creator Toolkit</a>
-    <a href="settings.html"><span class="nav-icon">*</span>Settings</a>
-    <a href="pricing.html" data-nav="pricing"><span class="nav-icon">₹</span>Pricing</a>
-    <a href="help.html"><span class="nav-icon">?</span>Help Desk</a>
-  </nav>
-  <div class="sidebar-foot"><p>Plan. Create. Monetize. Measure.</p><a href="index.html">Back to website</a></div>
-</aside>
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-top">
+        <a href="dashboard.html" class="logo"><span class="logo-mark">⚡</span><span>Comment<span style="color:var(--accent-light);">2</span>DM</span></a>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar"><span id="collapseIcon">«</span></button>
+      </div>
+      <div class="sidebar-account" id="sidebarAccountArea">
+        <button class="account-selector" id="accountSwitcherBtn">
+          <div class="account-pill">
+            <div class="account-avatar-img" id="sidebarIgAvatar" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.75rem;">IG</div>
+            <div class="account-meta"><span class="account-username" id="sidebarIgUsername">No Account</span><span class="account-status" id="sidebarIgStatus">Connect now</span></div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <nav class="app-nav" aria-label="Main Navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
+        <a href="creator-tools.html" class="active" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
+        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
+        <a href="messages.html" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
+        <a href="settings.html" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
+        <a href="help.html" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="dm-limit-card" id="dmLimitCard">
+          <div class="dm-limit-header"><span>Monthly DMs</span><strong id="dmLimitText">0 / 300</strong></div>
+          <div class="dm-progress-track"><div class="dm-progress-fill" id="dmProgressFill" style="width:5%;"></div></div>
+          <a href="billing.html" class="btn btn-ghost btn-sm btn-block" style="font-size:0.78rem;padding:5px;">Upgrade Plan ↗</a>
+        </div>
+        <div class="pie-gauge-collapsed" id="pieGaugeCollapsed"><div class="pie-gauge" id="pieGaugeCircle"><div class="pie-gauge-inner" id="pieGaugeInner">0%</div></div></div>
+      </div>
+    </aside>
 
-<div class="app-main">
-<header class="app-header">
+    <div class="app-main">
+      <header class="app-header">
         <div class="app-header-left">
-          <button class="menu-button" id="sidebarOpen" aria-label="Open navigation menu" aria-expanded="false"><span></span><span></span><span></span></button>
-          <a href="index.html" class="app-header-logo" aria-label="Nudge home"><span class="logo-mark"></span><span>Nudge</span></a>
-          <div class="app-header-copy">
-            <p class="eyebrow">Creator growth</p>
-            <h1>Creator Toolkit</h1>
+          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation menu">☰</button>
+          <div><span class="eyebrow" style="margin-bottom:0;">AI Tools</span><h2 style="font-size:1.15rem;font-weight:700;">Creator Studio AI ✨</h2></div>
+        </div>
+        <div class="header-user-menu">
+          <a href="help.html" class="notification-bell" title="Help Desk"><span>💬</span></a>
+          <div style="position:relative;">
+            <button class="user-profile-trigger" id="userProfileBtn">
+              <div class="user-avatar-circle" id="userAvatarInitial">U</div>
+              <div style="text-align:left;display:flex;flex-direction:column;"><span style="font-size:0.86rem;font-weight:600;color:#fff;" id="topbarUserName">Loading...</span><span class="plan-badge" id="topbarPlanBadge">Free</span></div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+              <a href="settings.html">⚙️ Settings</a><a href="billing.html">💳 Billing</a>
+              <div class="dropdown-divider"></div><a href="#" id="headerLogoutBtn">🚪 Sign out</a>
+            </div>
           </div>
         </div>
-        <div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span></div></div>
       </header>
 
-<main class="app-content">
-<div id="dashboardError" class="form-error"></div>
-<div id="creatorNotice" class="success-notice" hidden></div>
+      <main class="app-content">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <p class="eyebrow">AI-Powered Tools</p>
+            <h1 style="font-size:1.5rem;font-weight:700;color:#f1f5f9;">Creator Studio AI</h1>
+            <p style="color:rgba(255,255,255,0.4);font-size:0.86rem;margin-top:4px;">Generate hooks, DM scripts, content ideas, and more — powered by AI.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:0.8rem;color:rgba(255,255,255,0.4);">AI Credits:</span>
+            <span class="credits-badge">✨ <span id="aiCreditsDisplay">–</span> remaining</span>
+          </div>
+        </div>
 
-<section class="accounts-heading">
-  <div><p class="eyebrow">Creator business workspace</p><h2>Everything you need to turn content into a business.</h2><p>Plan content, create faster, manage deals, track money and build a professional creator brand.</p></div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-ghost" id="exportCreatorData">Export data</button><button class="btn btn-ghost" id="clearCreatorData">Clear toolkit data</button></div>
-</section>
+        <!-- Tabs -->
+        <div class="studio-tabs" style="margin-top:20px;" id="studioTabs">
+          <button class="studio-tab active" data-panel="hooks">🎬 Hook Generator</button>
+          <button class="studio-tab" data-panel="dm-script">📝 DM Script Writer</button>
+          <button class="studio-tab" data-panel="rate">📊 Rate Calculator</button>
+          <button class="studio-tab" data-panel="utm">🔗 UTM Builder</button>
+          <button class="studio-tab" data-panel="ideas">💡 Content Ideas</button>
+        </div>
 
-<section class="creator-dashboard-strip" aria-label="Creator business overview">
-  <div class="overview-card"><span class="overview-label">Planned content</span><strong id="summaryContent">0</strong><span class="overview-note">calendar items</span></div>
-  <div class="overview-card"><span class="overview-label">Active brand deals</span><strong id="summaryDeals">0</strong><span class="overview-note">not completed</span></div>
-  <div class="overview-card"><span class="overview-label">Tracked revenue</span><strong id="summaryRevenue">₹0</strong><span class="overview-note">deals + affiliate</span></div>
-  <div class="overview-card"><span class="overview-label">Goals completed</span><strong id="summaryGoals">0%</strong><span class="overview-note">current goal progress</span></div>
-</section>
+        <!-- Panel 1: Hook Generator -->
+        <div class="studio-panel active glass-card" id="panel-hooks">
+          <div style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;">🎬 Reel Hook Generator</div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:18px;">Generate scroll-stopping hooks for your reels. Each generation costs 10 AI credits.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-row" style="margin-bottom:0;">
+              <label>Topic / Niche</label>
+              <textarea class="form-input" id="hookTopic" rows="2" placeholder="e.g. fitness motivation, personal finance tips…"></textarea>
+            </div>
+            <div class="form-row" style="margin-bottom:0;">
+              <label>Target Audience</label>
+              <input class="form-input" id="hookAudience" type="text" placeholder="e.g. working professionals aged 25-35">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+            <div class="form-row" style="margin-bottom:0;">
+              <label>Tone</label>
+              <select class="form-input" id="hookTone">
+                <option value="inspirational">🌟 Inspirational</option>
+                <option value="funny">😄 Funny / Relatable</option>
+                <option value="educational">📚 Educational</option>
+                <option value="controversial">🔥 Controversial</option>
+                <option value="emotional">❤️ Emotional</option>
+              </select>
+            </div>
+            <div class="form-row" style="margin-bottom:0;">
+              <label>Number of Hooks: <span class="slider-val" id="hookCountVal">3</span></label>
+              <input type="range" id="hookCount" min="1" max="5" value="3" style="margin-top:14px;">
+            </div>
+          </div>
+          <div style="margin-top:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <button class="ai-btn" id="generateHooksBtn">✨ Generate Hooks</button>
+            <span class="credit-note">💸 Costs 10 AI credits per generation</span>
+          </div>
+          <div id="hooksResult" style="margin-top:16px;"></div>
+        </div>
 
-<div class="creator-tool-grid">
+        <!-- Panel 2: DM Script Writer -->
+        <div class="studio-panel glass-card" id="panel-dm-script">
+          <div style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;">📝 DM Script Writer</div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:18px;">Generate a personalized DM script to convert commenters. Costs 15 AI credits.</div>
+          <div class="form-row"><label>Product / Service Name</label><input class="form-input" id="dmProduct" type="text" placeholder="e.g. My Online Fitness Course"></div>
+          <div class="form-row">
+            <label>What should they do? (CTA)</label>
+            <select class="form-input" id="dmCta">
+              <option value="Visit my website">Visit my website</option>
+              <option value="Buy now">Buy now</option>
+              <option value="Book a free call">Book a free call</option>
+              <option value="Join my community">Join my community</option>
+              <option value="Download my free guide">Download my free guide</option>
+              <option value="Custom">Custom CTA…</option>
+            </select>
+          </div>
+          <div id="customCtaRow" class="form-row" style="display:none;"><label>Custom CTA</label><input class="form-input" id="customCta" placeholder="Type your custom call-to-action…"></div>
+          <div class="form-row">
+            <label>Tone</label>
+            <select class="form-input" id="dmTone">
+              <option value="friendly">😊 Friendly & Warm</option>
+              <option value="professional">💼 Professional</option>
+              <option value="urgent">⚡ Urgent / Limited time</option>
+              <option value="casual">🤙 Casual / Gen-Z</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <button class="ai-btn" id="generateDmBtn">✨ Generate DM Script</button>
+            <span class="credit-note">💸 Costs 15 AI credits</span>
+          </div>
+          <div id="dmScriptResult" style="margin-top:16px;"></div>
+        </div>
 
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Content calendar</h2><p>Plan ideas and publishing dates without leaving Nudge.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="calDate">Date</label><input class="form-control" id="calDate" type="date"></div>
-<div class="field"><label for="calFormat">Format</label><select class="form-control" id="calFormat"><option>Reel</option><option>Carousel</option><option>Post</option><option>Story</option><option>Live</option></select></div>
-<div class="field"><label for="calTopic">Topic</label><input class="form-control" id="calTopic" placeholder="e.g. 3 AI tools for students"></div>
-<div class="field"><label for="calStatus">Status</label><select class="form-control" id="calStatus"><option>Idea</option><option>Draft</option><option>Ready</option><option>Published</option></select></div>
-</div>
-<button class="btn btn-accent" id="addCalendarItem" style="margin-top:14px">Add to calendar</button>
-<div id="calendarList" class="idea-list"></div>
-</section>
+        <!-- Panel 3: Rate Calculator -->
+        <div class="studio-panel glass-card" id="panel-rate">
+          <div style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;">📊 Engagement Rate Calculator</div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:18px;">Calculate your Instagram engagement rate and get DM automation recommendations.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-row" style="margin-bottom:0;"><label>Follower Count</label><input class="form-input" id="calcFollowers" type="number" placeholder="e.g. 50000" min="0"></div>
+            <div class="form-row" style="margin-bottom:0;"><label>Avg Likes per Post</label><input class="form-input" id="calcLikes" type="number" placeholder="e.g. 1500" min="0"></div>
+            <div class="form-row" style="margin-bottom:0;"><label>Avg Comments per Reel</label><input class="form-input" id="calcComments" type="number" placeholder="e.g. 80" min="0"></div>
+            <div class="form-row" style="margin-bottom:0;">
+              <label>Account Type</label>
+              <select class="form-input" id="calcType">
+                <option value="nano">Nano (1K–10K)</option>
+                <option value="micro">Micro (10K–100K)</option>
+                <option value="mid">Mid-tier (100K–500K)</option>
+                <option value="macro">Macro (500K–1M)</option>
+                <option value="mega">Mega (1M+)</option>
+              </select>
+            </div>
+          </div>
+          <button class="ai-btn" style="margin-top:20px;" id="calcRateBtn">📊 Calculate Engagement Rate</button>
+          <div id="rateResult" style="margin-top:20px;"></div>
+        </div>
 
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Hook & caption studio</h2><p>Generate practical starting copy for Reels, carousels, posts and Stories.</p></div>
-<div class="field"><label for="contentTopic">Topic</label><input class="form-control" id="contentTopic" placeholder="e.g. 5 mistakes new creators make"></div>
-<div class="tool-form-grid">
-<div class="field"><label for="contentFormat">Format</label><select class="form-control" id="contentFormat"><option>Reel</option><option>Carousel</option><option>Post</option><option>Story</option></select></div>
-<div class="field"><label for="contentTone">Tone</label><select class="form-control" id="contentTone"><option>Educational</option><option>Bold</option><option>Friendly</option><option>Personal</option></select></div>
-<div class="field"><label for="contentLevel">Creator level</label><select class="form-control" id="contentLevel"><option value="beginner">Beginner</option><option value="pro" selected>Pro</option><option value="pro-max">Pro Max</option></select></div>
-</div>
-<button class="btn btn-accent" id="generateContent" style="margin-top:14px">Generate copy</button>
-<div class="tool-output" id="contentOutput">Your hook, structure and CTA will appear here.</div>
-<button class="btn btn-ghost" id="copyContent" style="margin-top:10px">Copy</button>
-</section>
+        <!-- Panel 4: UTM Builder -->
+        <div class="studio-panel glass-card" id="panel-utm">
+          <div style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;">🔗 UTM Link Builder</div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:18px;">Build trackable links for your Instagram DM campaigns.</div>
+          <div class="form-row"><label>Base URL</label><input class="form-input" id="utmUrl" type="url" placeholder="https://yourwebsite.com/product"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-row" style="margin-bottom:0;"><label>Campaign Name</label><input class="form-input" id="utmCampaign" type="text" placeholder="e.g. summer-sale-2024"></div>
+            <div class="form-row" style="margin-bottom:0;">
+              <label>Medium</label>
+              <select class="form-input" id="utmMedium"><option value="instagram">Instagram</option><option value="dm">DM</option><option value="story">Story</option><option value="bio">Bio</option></select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+            <div class="form-row" style="margin-bottom:0;"><label>Source</label><select class="form-input" id="utmSource"><option value="comment2dm">comment2dm</option><option value="instagram">instagram</option><option value="manual">manual</option></select></div>
+          </div>
+          <button class="ai-btn" style="margin-top:20px;" id="buildUtmBtn">🔗 Generate UTM Link</button>
+          <div id="utmOutput" style="display:none;margin-top:12px;">
+            <label style="font-size:0.78rem;color:rgba(255,255,255,0.35);">Generated URL</label>
+            <div class="utm-output" id="utmResult"></div>
+            <button class="copy-btn" style="position:static;margin-top:8px;display:inline-block;" id="copyUtmBtn">📋 Copy</button>
+          </div>
+          <div id="utmHistory" style="margin-top:24px;display:none;">
+            <div style="font-size:0.84rem;font-weight:600;color:#f1f5f9;margin-bottom:8px;">📜 Recent Links</div>
+            <div id="utmHistoryList" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden;"></div>
+          </div>
+        </div>
 
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Reel script builder</h2><p>Build a short-form script with a hook, value beats, proof and CTA.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="scriptTopic">Topic</label><input class="form-control" id="scriptTopic" placeholder="e.g. grow from 0 followers"></div>
-<div class="field"><label for="scriptLength">Length</label><select class="form-control" id="scriptLength"><option>15 seconds</option><option selected>30 seconds</option><option>60 seconds</option></select></div>
-</div>
-<div class="tool-form-grid"><div class="field"><label for="scriptAudience">Audience</label><input class="form-control" id="scriptAudience" placeholder="new creators"></div><div class="field"><label for="scriptLevel">Creator level</label><select class="form-control" id="scriptLevel"><option value="beginner">Beginner</option><option value="pro" selected>Pro</option><option value="pro-max">Pro Max</option></select></div></div>
-<button class="btn btn-accent" id="generateScript" style="margin-top:14px">Build script</button>
-<div class="tool-output" id="scriptOutput">Your script will appear here.</div>
-<button class="btn btn-ghost" id="copyScript" style="margin-top:10px">Copy script</button>
-</section>
+        <!-- Panel 5: Content Ideas -->
+        <div class="studio-panel glass-card" id="panel-ideas">
+          <div style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;">💡 Content Ideas Generator</div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:18px;">Get 7 data-driven content ideas for your niche. Costs 20 AI credits.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-row" style="margin-bottom:0;"><label>Niche / Industry</label><input class="form-input" id="ideasNiche" type="text" placeholder="e.g. personal finance, fitness, tech reviews"></div>
+            <div class="form-row" style="margin-bottom:0;"><label>Target Week</label><input class="form-input" id="ideasWeek" type="text" placeholder="e.g. This Week or Week 42"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;">
+            <button class="ai-btn" id="generateIdeasBtn">💡 Generate 7 Ideas</button>
+            <span class="credit-note">💸 Costs 20 AI credits</span>
+          </div>
+          <div class="ideas-grid" id="ideasResult" style="margin-top:4px;"></div>
+        </div>
 
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Content repurposer</h2><p>Turn one idea into a complete cross-platform content pack.</p></div>
-<div class="field"><label for="repurposeInput">Original content / idea</label><textarea class="form-control" id="repurposeInput" rows="5" placeholder="Paste a Reel idea, video transcript or content summary"></textarea></div>
-<button class="btn btn-accent" id="repurposeContent" style="margin-top:14px">Repurpose</button>
-<div class="tool-output" id="repurposeOutput">Your Reel, carousel, Story and caption versions will appear here.</div>
-<button class="btn btn-ghost" id="copyRepurpose" style="margin-top:10px">Copy pack</button>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Content idea bank</h2><p>Save ideas, hooks and campaign concepts locally.</p></div>
-<div class="field"><label for="ideaInput">New idea</label><input class="form-control" id="ideaInput" placeholder="3 mistakes creators make when pricing a service"></div>
-<button class="btn btn-accent" id="saveIdea" style="margin-top:14px">Save idea</button>
-<div id="ideaList" class="idea-list"></div>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Creator revenue calculator</h2><p>Model leads, customers and revenue from a campaign.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="reach">Reach</label><input class="form-control" id="reach" type="number" min="0" value="10000"></div>
-<div class="field"><label for="leadRate">Lead rate %</label><input class="form-control" id="leadRate" type="number" min="0" max="100" step="0.1" value="3"></div>
-<div class="field"><label for="closeRate">Close rate %</label><input class="form-control" id="closeRate" type="number" min="0" max="100" step="0.1" value="10"></div>
-<div class="field"><label for="price">Offer price (₹)</label><input class="form-control" id="price" type="number" min="0" value="999"></div>
-</div>
-<div class="tool-result"><span>Estimated revenue</span><strong id="revenueResult">₹2,997</strong><small id="revenueMeta">300 leads · 30 customers</small></div>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>UTM link builder</h2><p>Track which Reel, Story or campaign drives clicks.</p></div>
-<div class="field"><label for="baseUrl">Destination URL</label><input class="form-control" id="baseUrl" type="url" placeholder="https://example.com/offer"></div>
-<div class="tool-form-grid">
-<div class="field"><label for="campaign">Campaign</label><input class="form-control" id="campaign" placeholder="october-launch"></div>
-<div class="field"><label for="content">Content</label><input class="form-control" id="content" placeholder="reel-01"></div>
-</div>
-<button class="btn btn-accent" id="buildUtm" style="margin-top:14px">Build tracked link</button>
-<div class="tool-output" id="utmOutput">Your tracked link will appear here.</div>
-<button class="btn btn-ghost" id="copyUtm" disabled style="margin-top:10px">Copy link</button>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Brand deal manager</h2><p>Keep sponsorships, deliverables, deadlines and payments in one place.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="dealBrand">Brand</label><input class="form-control" id="dealBrand" placeholder="Brand name"></div>
-<div class="field"><label for="dealAmount">Fee (₹)</label><input class="form-control" id="dealAmount" type="number" min="0" placeholder="25000"></div>
-<div class="field"><label for="dealDeliverables">Deliverables</label><input class="form-control" id="dealDeliverables" placeholder="1 Reel + 3 Stories"></div>
-<div class="field"><label for="dealDeadline">Deadline</label><input class="form-control" id="dealDeadline" type="date"></div>
-</div>
-<div class="field" style="margin-top:14px"><label for="dealStatus">Status</label><select class="form-control" id="dealStatus"><option>Lead</option><option>Negotiating</option><option>Confirmed</option><option>Content due</option><option>Awaiting payment</option><option>Paid</option><option>Completed</option></select></div>
-<button class="btn btn-accent" id="addDeal" style="margin-top:14px">Add brand deal</button>
-<div id="dealList" class="idea-list"></div>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Brand deal rate card</h2><p>Create a transparent starting rate card. Estimates are planning inputs, not guaranteed market rates.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="rateReel">Reel (₹)</label><input class="form-control" id="rateReel" type="number" min="0" value="5000"></div>
-<div class="field"><label for="rateStory">Story (₹)</label><input class="form-control" id="rateStory" type="number" min="0" value="2500"></div>
-<div class="field"><label for="rateCarousel">Carousel (₹)</label><input class="form-control" id="rateCarousel" type="number" min="0" value="3500"></div>
-<div class="field"><label for="rateUgc">UGC video (₹)</label><input class="form-control" id="rateUgc" type="number" min="0" value="7500"></div>
-</div>
-<button class="btn btn-accent" id="saveRateCard" style="margin-top:14px">Save rate card</button>
-<div class="tool-output" id="rateCardOutput">Your saved rate card will appear here.</div>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Media kit builder</h2><p>Build a clean creator profile you can print or save as PDF from your browser.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="mediaName">Creator name</label><input class="form-control" id="mediaName" placeholder="Your name"></div>
-<div class="field"><label for="mediaHandle">Instagram handle</label><input class="form-control" id="mediaHandle" placeholder="@yourhandle"></div>
-<div class="field"><label for="mediaNiche">Niche</label><input class="form-control" id="mediaNiche" placeholder="Tech & AI"></div>
-<div class="field"><label for="mediaFollowers">Followers</label><input class="form-control" id="mediaFollowers" type="number" min="0" placeholder="25000"></div>
-<div class="field"><label for="mediaEngagement">Engagement %</label><input class="form-control" id="mediaEngagement" type="number" min="0" step="0.1" placeholder="4.2"></div>
-<div class="field"><label for="mediaAvgViews">Average Reel views</label><input class="form-control" id="mediaAvgViews" type="number" min="0" placeholder="12000"></div>
-</div>
-<div class="field" style="margin-top:14px"><label for="mediaBio">About / audience</label><textarea class="form-control" id="mediaBio" rows="3" placeholder="Who you create for and what makes your audience valuable."></textarea></div>
-<div class="field" style="margin-top:14px"><label for="mediaContact">Business email</label><input class="form-control" id="mediaContact" type="email" placeholder="you@example.com"></div>
-<div id="mediaKitPreview" class="media-kit-preview"></div>
-<button class="btn btn-accent" id="printMediaKit" style="margin-top:14px">Print / Save as PDF</button>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Affiliate earnings tracker</h2><p>Track clicks, conversions and commissions from affiliate links.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="affProduct">Product / offer</label><input class="form-control" id="affProduct" placeholder="AI course"></div>
-<div class="field"><label for="affNetwork">Network</label><input class="form-control" id="affNetwork" placeholder="Amazon / Impact / direct"></div>
-<div class="field"><label for="affClicks">Clicks</label><input class="form-control" id="affClicks" type="number" min="0" value="0"></div>
-<div class="field"><label for="affConversions">Conversions</label><input class="form-control" id="affConversions" type="number" min="0" value="0"></div>
-<div class="field"><label for="affCommission">Commission (₹)</label><input class="form-control" id="affCommission" type="number" min="0" value="0"></div>
-</div>
-<button class="btn btn-accent" id="addAffiliate" style="margin-top:14px">Add affiliate result</button>
-<div id="affiliateList" class="idea-list"></div>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Collaboration manager</h2><p>Track creator collaborations and who owes what.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="collabPerson">Creator / partner</label><input class="form-control" id="collabPerson" placeholder="Creator name"></div>
-<div class="field"><label for="collabProject">Project</label><input class="form-control" id="collabProject" placeholder="Joint Reel"></div>
-<div class="field"><label for="collabDue">Due date</label><input class="form-control" id="collabDue" type="date"></div>
-<div class="field"><label for="collabStatus">Status</label><select class="form-control" id="collabStatus"><option>Idea</option><option>Contacted</option><option>Confirmed</option><option>In progress</option><option>Delivered</option></select></div>
-</div>
-<button class="btn btn-accent" id="addCollab" style="margin-top:14px">Add collaboration</button>
-<div id="collabList" class="idea-list"></div>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Creator goal tracker</h2><p>Set measurable growth and business targets.</p></div>
-<div class="tool-form-grid">
-<div class="field"><label for="goalName">Goal</label><input class="form-control" id="goalName" placeholder="Reach 50K followers"></div>
-<div class="field"><label for="goalTarget">Target</label><input class="form-control" id="goalTarget" type="number" min="1" value="50000"></div>
-<div class="field"><label for="goalCurrent">Current</label><input class="form-control" id="goalCurrent" type="number" min="0" value="0"></div>
-<div class="field"><label for="goalUnit">Unit</label><select class="form-control" id="goalUnit"><option>followers</option><option>views</option><option>₹ revenue</option><option>posts</option><option>leads</option></select></div>
-</div>
-<button class="btn btn-accent" id="addGoal" style="margin-top:14px">Add goal</button>
-<div id="goalList" class="idea-list"></div>
-</section>
-
-<section class="activity-card creator-tool-card">
-<div class="card-heading"><h2>Offer CTA generator</h2><p>Create a conversion CTA that connects directly to your Nudge comment automation.</p></div>
-<div class="field"><label for="offer2">Offer</label><input class="form-control" id="offer2" placeholder="Creator checklist"></div>
-<div class="field" style="margin-top:14px"><label for="keyword2">Keyword</label><input class="form-control" id="keyword2" value="INFO"></div>
-<button class="btn btn-accent" id="generateCta2" style="margin-top:14px">Generate CTA</button>
-<div class="tool-output" id="ctaOutput2">Comment INFO and I'll send you the details.</div>
-</section>
-
-</div>
-</main>
-</div>
-</div>
-<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-<script src="dashboard.js"></script>
-<script src="creator-tools.js"></script>
+      </main>
+    </div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <script src="dashboard.js"></script>
+  <script src="creator-tools.js"></script>
 </body>
 </html>

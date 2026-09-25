@@ -1,15 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Messages - Nudge</title><link rel="stylesheet" href="styles.css" /><link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DM Log — Comment2DM</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .filter-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .search-input-wrap { position:relative; flex:1; min-width:180px; }
+    .search-input-wrap input { width:100%; padding:9px 14px 9px 36px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#f1f5f9; font-size:0.86rem; outline:none; transition:border 0.2s; }
+    .search-input-wrap input:focus { border-color:#6366f1; }
+    .search-input-wrap .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.3); font-size:0.9rem; }
+    .filter-select { padding:9px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#f1f5f9; font-size:0.86rem; cursor:pointer; outline:none; }
+    .stats-bar { display:flex; gap:20px; flex-wrap:wrap; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:14px 20px; }
+    .stats-bar-item { display:flex; flex-direction:column; gap:2px; }
+    .stats-bar-item .stat-val { font-size:1.3rem; font-weight:700; color:#f1f5f9; }
+    .stats-bar-item .stat-lbl { font-size:0.73rem; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.05em; }
+    .dm-table { width:100%; border-collapse:collapse; }
+    .dm-table th { text-align:left; font-size:0.73rem; color:rgba(255,255,255,0.3); padding:0 14px 10px; text-transform:uppercase; letter-spacing:0.05em; font-weight:500; white-space:nowrap; }
+    .dm-table td { padding:13px 14px; font-size:0.84rem; color:#e2e8f0; border-top:1px solid rgba(255,255,255,0.05); vertical-align:middle; }
+    .dm-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .avatar-circle { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#ec4899); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.78rem; color:#fff; flex-shrink:0; }
+    .handle-cell { display:flex; align-items:center; gap:10px; }
+    .preview-text { max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:rgba(255,255,255,0.6); }
+    .automation-pill { background:rgba(99,102,241,0.15); color:#818cf8; border-radius:20px; padding:3px 10px; font-size:0.73rem; font-weight:500; white-space:nowrap; }
+    .status-dot { width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px; }
+    .status-dot.sent { background:#10b981; }
+    .status-dot.failed { background:#f43f5e; }
+    .status-dot.pending { background:#f59e0b; }
+    .status-cell { display:flex; align-items:center; white-space:nowrap; font-size:0.82rem; }
+    .pagination { display:flex; align-items:center; gap:10px; justify-content:center; margin-top:20px; }
+    .page-btn { padding:7px 16px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); color:#f1f5f9; font-size:0.84rem; cursor:pointer; transition:all 0.2s; }
+    .page-btn:hover:not(:disabled) { background:rgba(99,102,241,0.2); border-color:#6366f1; }
+    .page-btn:disabled { opacity:0.35; cursor:not-allowed; }
+    .page-info { font-size:0.82rem; color:rgba(255,255,255,0.4); }
+    .empty-state { text-align:center; padding:50px 20px; color:rgba(255,255,255,0.35); }
+    .empty-state-icon { font-size:2.5rem; margin-bottom:12px; }
+    .section-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:24px; margin-top:16px; }
+  </style>
 </head>
-<body class="app-body" data-page="messages"><div class="app-shell"><aside class="app-sidebar" id="appSidebar"><div class="sidebar-top"><a href="index.html" class="logo" aria-label="Nudge home"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose" aria-label="Close menu">x</button></div><nav class="app-nav" aria-label="Dashboard navigation"><a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a><a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a><a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a><a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a><a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a><a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">$</span>Creator Toolkit</a><a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a><a href="pricing.html" data-nav="pricing"><span class="nav-icon">₹</span>Pricing</a><a href="help.html" data-nav="help"><span class="nav-icon">?</span>Help Desk</a></nav><div class="sidebar-foot"><p>Instagram automation for creators.</p><a href="index.html">Back to website</a></div></aside><div class="app-main"><header class="app-header">
+<body class="app-body" data-page="messages">
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-top">
+        <a href="dashboard.html" class="logo">
+          <span class="logo-mark">⚡</span>
+          <span>Comment<span style="color:var(--accent-light);">2</span>DM</span>
+        </a>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar">
+          <span id="collapseIcon">«</span>
+        </button>
+      </div>
+      <div class="sidebar-account" id="sidebarAccountArea">
+        <button class="account-selector" id="accountSwitcherBtn">
+          <div class="account-pill">
+            <div class="account-avatar-img" id="sidebarIgAvatar" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.75rem;">IG</div>
+            <div class="account-meta">
+              <span class="account-username" id="sidebarIgUsername">No Account</span>
+              <span class="account-status" id="sidebarIgStatus">Connect now</span>
+            </div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <nav class="app-nav" aria-label="Main Navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
+        <a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
+        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
+        <a href="messages.html" class="active" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
+        <a href="settings.html" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
+        <a href="help.html" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="dm-limit-card" id="dmLimitCard">
+          <div class="dm-limit-header"><span>Monthly DMs</span><strong id="dmLimitText">0 / 300</strong></div>
+          <div class="dm-progress-track"><div class="dm-progress-fill" id="dmProgressFill" style="width:5%;"></div></div>
+          <a href="billing.html" class="btn btn-ghost btn-sm btn-block" style="font-size:0.78rem;padding:5px;">Upgrade Plan ↗</a>
+        </div>
+        <div class="pie-gauge-collapsed" id="pieGaugeCollapsed">
+          <div class="pie-gauge" id="pieGaugeCircle"><div class="pie-gauge-inner" id="pieGaugeInner">0%</div></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-header">
         <div class="app-header-left">
-          <button class="menu-button" id="sidebarOpen" aria-label="Open navigation menu" aria-expanded="false"><span></span><span></span><span></span></button>
-          <a href="index.html" class="app-header-logo" aria-label="Nudge home"><span class="logo-mark"></span><span>Nudge</span></a>
-          <div class="app-header-copy">
-            <p class="eyebrow">Workspace</p>
-            <h1>Messages</h1>
+          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation menu">☰</button>
+          <div>
+            <span class="eyebrow" style="margin-bottom:0;">Workspace</span>
+            <h2 style="font-size:1.15rem;font-weight:700;">DM Activity Log</h2>
           </div>
         </div>
-        <div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span></div></div>
-      </header><main class="app-content"><div id="dashboardError" class="form-error"></div><section class="activity-card"><div class="card-heading"><div><p class="eyebrow">Inbox activity</p><h2>Automated messages</h2><p>Recent comments and private-reply activity from your Instagram automations.</p></div><button id="refreshMessages" class="btn btn-ghost">Refresh</button></div><div id="messagesList" class="activity-list"><p class="muted">Loading messages...</p></div></section></main></div></div><div class="sidebar-backdrop" id="sidebarBackdrop"></div><script src="dashboard.js"></script><script src="messages.js"></script></body></html>
+        <div class="header-user-menu">
+          <a href="help.html" class="notification-bell" title="Help Desk"><span>💬</span></a>
+          <div style="position:relative;">
+            <button class="user-profile-trigger" id="userProfileBtn">
+              <div class="user-avatar-circle" id="userAvatarInitial">U</div>
+              <div style="text-align:left;display:flex;flex-direction:column;">
+                <span style="font-size:0.86rem;font-weight:600;color:#fff;" id="topbarUserName">Loading...</span>
+                <span class="plan-badge" id="topbarPlanBadge">Free</span>
+              </div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+              <a href="settings.html">⚙️ Settings</a>
+              <a href="billing.html">💳 Billing</a>
+              <div class="dropdown-divider"></div>
+              <a href="#" id="headerLogoutBtn">🚪 Sign out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="app-content">
+        <div>
+          <p class="eyebrow">Activity</p>
+          <h1 style="font-size:1.5rem;font-weight:700;color:#f1f5f9;">DM Activity Log</h1>
+          <p style="color:rgba(255,255,255,0.4);font-size:0.86rem;margin-top:4px;">Every DM sent by your automations, in real time.</p>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="stats-bar" style="margin-top:20px;" id="statsBar">
+          <div class="stats-bar-item"><div class="stat-val" id="statTotal">–</div><div class="stat-lbl">Total DMs</div></div>
+          <div style="width:1px;background:rgba(255,255,255,0.08);"></div>
+          <div class="stats-bar-item"><div class="stat-val" style="color:#10b981;" id="statSent">–</div><div class="stat-lbl">✅ Sent</div></div>
+          <div style="width:1px;background:rgba(255,255,255,0.08);"></div>
+          <div class="stats-bar-item"><div class="stat-val" style="color:#f43f5e;" id="statFailed">–</div><div class="stat-lbl">❌ Failed</div></div>
+          <div style="width:1px;background:rgba(255,255,255,0.08);"></div>
+          <div class="stats-bar-item"><div class="stat-val" style="color:#f59e0b;" id="statPending">–</div><div class="stat-lbl">⏳ Pending</div></div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="section-card" style="padding:16px;">
+          <div class="filter-bar">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="searchInput" placeholder="Search by username or message..." />
+            </div>
+            <select class="filter-select" id="statusFilter">
+              <option value="all">All Status</option>
+              <option value="sent">✅ Sent</option>
+              <option value="failed">❌ Failed</option>
+              <option value="pending">⏳ Pending</option>
+            </select>
+            <select class="filter-select" id="daysFilter">
+              <option value="7">Last 7 Days</option>
+              <option value="30">Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="section-card" style="padding:0;overflow:hidden;">
+          <div style="overflow-x:auto;">
+            <table class="dm-table">
+              <thead>
+                <tr>
+                  <th style="padding-left:20px;">User</th>
+                  <th>Comment</th>
+                  <th>DM Preview</th>
+                  <th>Automation</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="dmTableBody">
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);">Loading messages...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+          <button class="page-btn" id="prevBtn" disabled>← Prev</button>
+          <span class="page-info" id="pageInfo">Page 1 of 1</span>
+          <button class="page-btn" id="nextBtn" disabled>Next →</button>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <script src="dashboard.js"></script>
+  <script src="messages.js"></script>
+</body>
+</html>

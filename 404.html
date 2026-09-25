@@ -1,5 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found | Nudge</title><meta name="description" content="The page you requested could not be found."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css"></head>
-<body><main class="error-page"><div><a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a><h1>404</h1><p>That page wandered off. Let’s get you back to the good stuff.</p><a class="btn btn-accent" href="index.html">Back to home</a></div></main></body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Not Found — Comment2DM</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{min-height:100vh;background:#09090b;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;overflow:hidden;position:relative;}
+    .particles{position:fixed;inset:0;pointer-events:none;z-index:0;}
+    .particle{position:absolute;width:4px;height:4px;border-radius:50%;background:rgba(99,102,241,0.3);animation:float linear infinite;}
+    @keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{transform:translateY(-20px) scale(1.2);opacity:0;}}
+    .center{position:relative;z-index:1;text-align:center;padding:24px;}
+    .num{font-size:clamp(6rem,18vw,12rem);font-weight:700;line-height:1;background:linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:glow 3s ease-in-out infinite;}
+    @keyframes glow{0%,100%{filter:drop-shadow(0 0 20px rgba(99,102,241,0.4));}50%{filter:drop-shadow(0 0 40px rgba(236,72,153,0.6));}}
+    .title{font-size:1.8rem;font-weight:700;color:#f1f5f9;margin-top:4px;}
+    .desc{color:rgba(255,255,255,0.45);font-size:0.96rem;margin-top:12px;max-width:380px;line-height:1.6;}
+    .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:28px;}
+    .btn{padding:12px 24px;border-radius:12px;font-size:0.9rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s;}
+    .btn-ghost{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#f1f5f9;}
+    .btn-ghost:hover{background:rgba(255,255,255,0.1);}
+    .btn-accent{background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;}
+    .btn-accent:hover{opacity:0.85;}
+    .logo-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-bottom:20px;color:#818cf8;font-size:1rem;font-weight:600;}
+    .logo-mark{font-size:1.2rem;}
+  </style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+  <div class="center">
+    <a href="index.html" class="logo-link">
+      <span class="logo-mark">⚡</span>
+      Comment<span style="color:#ec4899;">2</span>DM
+    </a>
+    <div class="num">404</div>
+    <div class="title">Page not found</div>
+    <p class="desc">The page you're looking for doesn't exist or may have been moved. Let's get you back on track.</p>
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="history.back()">← Go Back</button>
+      <a href="dashboard.html" class="btn btn-accent">Go to Dashboard →</a>
+    </div>
+  </div>
+  <script>
+    // Generate floating particles
+    const p = document.getElementById('particles');
+    for (let i = 0; i < 18; i++) {
+      const el = document.createElement('div');
+      el.className = 'particle';
+      el.style.left = Math.random() * 100 + '%';
+      el.style.animationDuration = (8 + Math.random() * 12) + 's';
+      el.style.animationDelay = (Math.random() * 10) + 's';
+      el.style.width = el.style.height = (2 + Math.random() * 4) + 'px';
+      el.style.background = Math.random() > 0.5 ? 'rgba(99,102,241,0.4)' : 'rgba(236,72,153,0.3)';
+      p.appendChild(el);
+    }
+  </script>
+</body>
 </html>

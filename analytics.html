@@ -1,12 +1,239 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Analytics - Nudge</title><link rel="stylesheet" href="styles.css"><link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
-</head><body class="app-body" data-page="analytics"><div class="app-shell"><aside class="app-sidebar" id="appSidebar"><div class="sidebar-top"><a href="index.html" class="logo" aria-label="Nudge home"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose">×</button></div><nav class="app-nav"><a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a><a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a><a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a><a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a><a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a><a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">$</span>Creator Toolkit</a><a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a><a href="pricing.html" data-nav="pricing"><span class="nav-icon">₹</span>Pricing</a><a href="help.html" data-nav="help"><span class="nav-icon">?</span>Help Desk</a></nav><div class="sidebar-foot"><p>Instagram automation for creators.</p><a href="index.html">Back to website</a></div></aside><div class="app-main"><header class="app-header">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics — Comment2DM</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .range-tabs { display:flex; gap:6px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:4px; width:fit-content; }
+    .range-tab { padding:6px 16px; border-radius:7px; border:none; background:transparent; color:rgba(255,255,255,0.5); font-size:0.82rem; font-weight:500; cursor:pointer; transition:all 0.2s; }
+    .range-tab.active { background:rgba(99,102,241,0.25); color:#818cf8; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:20px; }
+    @media(max-width:900px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} }
+    @media(max-width:520px){ .kpi-grid{grid-template-columns:1fr;} }
+    .kpi-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:22px 20px; position:relative; overflow:hidden; transition:transform 0.2s,box-shadow 0.2s; }
+    .kpi-card:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(99,102,241,0.12); }
+    .kpi-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:linear-gradient(180deg,#6366f1,#ec4899); border-radius:0 0 0 16px; }
+    .kpi-icon { font-size:1.5rem; margin-bottom:10px; }
+    .kpi-value { font-size:2rem; font-weight:700; color:#f1f5f9; line-height:1; }
+    .kpi-label { font-size:0.8rem; color:rgba(255,255,255,0.45); margin-top:4px; }
+    .kpi-trend { font-size:0.78rem; margin-top:8px; display:flex; align-items:center; gap:4px; }
+    .kpi-trend.up { color:#10b981; }
+    .kpi-trend.down { color:#f43f5e; }
+    .section-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:24px; margin-top:20px; }
+    .section-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .section-card-title { font-size:1rem; font-weight:600; color:#f1f5f9; }
+    .section-card-sub { font-size:0.8rem; color:rgba(255,255,255,0.4); margin-top:2px; }
+    .leaderboard-table { width:100%; border-collapse:collapse; }
+    .leaderboard-table th { text-align:left; font-size:0.75rem; color:rgba(255,255,255,0.35); font-weight:500; padding:0 12px 10px; text-transform:uppercase; letter-spacing:0.05em; }
+    .leaderboard-table td { padding:12px; font-size:0.86rem; color:#e2e8f0; border-top:1px solid rgba(255,255,255,0.05); }
+    .leaderboard-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .status-badge { display:inline-flex; align-items:center; gap:5px; font-size:0.75rem; font-weight:500; padding:3px 10px; border-radius:20px; }
+    .status-badge.active { background:rgba(16,185,129,0.15); color:#10b981; }
+    .status-badge.paused { background:rgba(245,158,11,0.15); color:#f59e0b; }
+    .chart-container { height:160px; display:flex; align-items:flex-end; gap:6px; }
+    .chart-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .chart-bar { width:100%; border-radius:4px 4px 0 0; background:linear-gradient(180deg,#6366f1,#8b5cf6); transition:height 0.6s ease; min-height:2px; position:relative; }
+    .chart-bar:hover { filter:brightness(1.2); }
+    .chart-bar-label { font-size:0.65rem; color:rgba(255,255,255,0.3); }
+    .funnel-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    @media(max-width:600px){ .funnel-row{grid-template-columns:1fr;} }
+    .funnel-step { text-align:center; padding:20px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.06); position:relative; }
+    .funnel-num { font-size:2rem; font-weight:700; background:linear-gradient(135deg,#6366f1,#ec4899); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .funnel-label { font-size:0.82rem; color:rgba(255,255,255,0.5); margin-top:4px; }
+    .funnel-pct { font-size:0.75rem; color:#10b981; margin-top:6px; }
+    .funnel-arrow { position:absolute; right:-18px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.2); font-size:1.2rem; z-index:1; }
+    @media(max-width:600px){ .funnel-arrow{display:none;} }
+    .empty-state { text-align:center; padding:40px; color:rgba(255,255,255,0.35); }
+    .empty-state-icon { font-size:2.5rem; margin-bottom:10px; }
+    .loading-shimmer { background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:8px; }
+    @keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+  </style>
+</head>
+<body class="app-body" data-page="analytics">
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-top">
+        <a href="dashboard.html" class="logo">
+          <span class="logo-mark">⚡</span>
+          <span>Comment<span style="color:var(--accent-light);">2</span>DM</span>
+        </a>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar">
+          <span id="collapseIcon">«</span>
+        </button>
+      </div>
+      <div class="sidebar-account" id="sidebarAccountArea">
+        <button class="account-selector" id="accountSwitcherBtn">
+          <div class="account-pill">
+            <div class="account-avatar-img" id="sidebarIgAvatar" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.75rem;">IG</div>
+            <div class="account-meta">
+              <span class="account-username" id="sidebarIgUsername">No Account</span>
+              <span class="account-status" id="sidebarIgStatus">Connect now</span>
+            </div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <nav class="app-nav" aria-label="Main Navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
+        <a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
+        <a href="analytics.html" class="active" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
+        <a href="messages.html" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
+        <a href="settings.html" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
+        <a href="help.html" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="dm-limit-card" id="dmLimitCard">
+          <div class="dm-limit-header"><span>Monthly DMs</span><strong id="dmLimitText">0 / 300</strong></div>
+          <div class="dm-progress-track"><div class="dm-progress-fill" id="dmProgressFill" style="width:5%;"></div></div>
+          <a href="billing.html" class="btn btn-ghost btn-sm btn-block" style="font-size:0.78rem;padding:5px;">Upgrade Plan ↗</a>
+        </div>
+        <div class="pie-gauge-collapsed" id="pieGaugeCollapsed">
+          <div class="pie-gauge" id="pieGaugeCircle"><div class="pie-gauge-inner" id="pieGaugeInner">0%</div></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-header">
         <div class="app-header-left">
-          <button class="menu-button" id="sidebarOpen" aria-label="Open navigation menu" aria-expanded="false"><span></span><span></span><span></span></button>
-          <a href="index.html" class="app-header-logo" aria-label="Nudge home"><span class="logo-mark"></span><span>Nudge</span></a>
-          <div class="app-header-copy">
-            <p class="eyebrow">Workspace</p>
-            <h1>Analytics</h1>
+          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation menu">☰</button>
+          <div>
+            <span class="eyebrow" style="margin-bottom:0;">Workspace</span>
+            <h2 style="font-size:1.15rem;font-weight:700;">Analytics</h2>
           </div>
         </div>
-        <div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span></div></div>
-      </header><main class="app-content"><div id="dashboardError" class="form-error"></div><section class="accounts-heading"><div><p class="eyebrow">Performance</p><h2>Automation analytics</h2><p>Track comments, successful replies and failed deliveries from your connected accounts.</p></div><button class="btn btn-ghost" id="refreshAnalytics">Refresh</button></section><section class="overview-grid"><div class="overview-card"><span class="overview-label">Comments processed</span><strong id="metricComments">0</strong><span class="overview-note">All tracked webhook comments</span></div><div class="overview-card"><span class="overview-label">Messages sent</span><strong id="metricSent">0</strong><span class="overview-note">Successful private replies</span></div><div class="overview-card"><span class="overview-label">Failed replies</span><strong id="metricFailed">0</strong><span class="overview-note">Requires attention</span></div><div class="overview-card"><span class="overview-label">Active automations</span><strong id="metricAutomations">0</strong><span class="overview-note">Currently enabled</span></div></section><section class="activity-card" style="margin-top:24px"><div class="card-heading"><div><h2>Recent activity</h2><p>Latest automation events.</p></div></div><div id="analyticsRecent" class="instagram-accounts" style="margin-top:18px"></div></section></main></div></div><div class="sidebar-backdrop" id="sidebarBackdrop"></div><script src="dashboard.js"></script><script src="analytics.js"></script></body></html>
+        <div class="header-user-menu">
+          <a href="help.html" class="notification-bell" title="Help Desk"><span>💬</span></a>
+          <div style="position:relative;">
+            <button class="user-profile-trigger" id="userProfileBtn">
+              <div class="user-avatar-circle" id="userAvatarInitial">U</div>
+              <div style="text-align:left;display:flex;flex-direction:column;">
+                <span style="font-size:0.86rem;font-weight:600;color:#fff;" id="topbarUserName">Loading...</span>
+                <span class="plan-badge" id="topbarPlanBadge">Free</span>
+              </div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+              <a href="settings.html">⚙️ Settings</a>
+              <a href="billing.html">💳 Billing</a>
+              <div class="dropdown-divider"></div>
+              <a href="#" id="headerLogoutBtn">🚪 Sign out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="app-content">
+        <!-- Header row -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
+          <div>
+            <p class="eyebrow">Performance</p>
+            <h1 style="font-size:1.5rem;font-weight:700;color:#f1f5f9;">Automation Analytics</h1>
+            <p style="color:rgba(255,255,255,0.4);font-size:0.86rem;margin-top:4px;">Track DMs, engagement rates, and automation performance.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="range-tabs" id="rangeTabs">
+              <button class="range-tab active" data-days="7">7 Days</button>
+              <button class="range-tab" data-days="30">30 Days</button>
+              <button class="range-tab" data-days="90">90 Days</button>
+            </div>
+            <button class="btn btn-ghost" id="refreshBtn" style="font-size:0.82rem;padding:7px 14px;">↻ Refresh</button>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid" id="kpiGrid">
+          <div class="kpi-card"><div class="kpi-icon">📤</div><div class="kpi-value loading-shimmer" id="kpiSent" style="height:36px;width:80px;margin-bottom:6px;"></div><div class="kpi-label">DMs Sent</div><div class="kpi-trend up" id="kpiSentTrend"></div></div>
+          <div class="kpi-card"><div class="kpi-icon">💬</div><div class="kpi-value loading-shimmer" id="kpiComments" style="height:36px;width:80px;margin-bottom:6px;"></div><div class="kpi-label">Comments Processed</div><div class="kpi-trend up" id="kpiCommentsTrend"></div></div>
+          <div class="kpi-card"><div class="kpi-icon">✅</div><div class="kpi-value loading-shimmer" id="kpiDelivery" style="height:36px;width:80px;margin-bottom:6px;"></div><div class="kpi-label">Delivery Rate</div><div class="kpi-trend up" id="kpiDeliveryTrend"></div></div>
+          <div class="kpi-card"><div class="kpi-icon">⚡</div><div class="kpi-value loading-shimmer" id="kpiAutomations" style="height:36px;width:80px;margin-bottom:6px;"></div><div class="kpi-label">Active Automations</div><div class="kpi-trend" id="kpiAutoTrend"></div></div>
+        </div>
+
+        <!-- Bar Chart + Funnel row -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:20px;" id="chartFunnelRow">
+          <div class="section-card" style="margin-top:0;">
+            <div class="section-card-header">
+              <div>
+                <div class="section-card-title">📈 Daily DM Trend</div>
+                <div class="section-card-sub">DMs sent per day over selected period</div>
+              </div>
+            </div>
+            <div class="chart-container" id="dmTrendChart">
+              <div class="empty-state" style="width:100%;">
+                <div class="empty-state-icon">📊</div>
+                <p>Loading chart...</p>
+              </div>
+            </div>
+          </div>
+          <div class="section-card" style="margin-top:0;">
+            <div class="section-card-header">
+              <div>
+                <div class="section-card-title">🔻 Engagement Funnel</div>
+                <div class="section-card-sub">Comment → DM conversion</div>
+              </div>
+            </div>
+            <div id="funnelContainer">
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+                <div class="funnel-step" style="padding:14px;text-align:left;">
+                  <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em;">Comments Seen</div>
+                  <div class="funnel-num" id="funnelComments" style="font-size:1.5rem;">–</div>
+                </div>
+                <div style="text-align:center;color:rgba(255,255,255,0.2);font-size:0.8rem;">↓ <span id="funnelPct1" style="color:#6366f1;">–%</span> trigger rate</div>
+                <div class="funnel-step" style="padding:14px;text-align:left;">
+                  <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em;">DMs Triggered</div>
+                  <div class="funnel-num" id="funnelTriggered" style="font-size:1.5rem;">–</div>
+                </div>
+                <div style="text-align:center;color:rgba(255,255,255,0.2);font-size:0.8rem;">↓ <span id="funnelPct2" style="color:#10b981;">–%</span> delivery rate</div>
+                <div class="funnel-step" style="padding:14px;text-align:left;border-color:rgba(16,185,129,0.2);">
+                  <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em;">DMs Delivered</div>
+                  <div class="funnel-num" id="funnelDelivered" style="font-size:1.5rem;">–</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <style>@media(max-width:768px){#chartFunnelRow{grid-template-columns:1fr !important;}}</style>
+
+        <!-- Automation Leaderboard -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div>
+              <div class="section-card-title">🏆 Automation Leaderboard</div>
+              <div class="section-card-sub">Top performing automations ranked by DMs sent</div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="leaderboard-table" id="leaderboardTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Automation</th>
+                  <th>Account</th>
+                  <th>DMs Sent</th>
+                  <th>Success Rate</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardBody">
+                <tr><td colspan="6" style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);">Loading automations...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <script src="dashboard.js"></script>
+  <script src="analytics.js"></script>
+</body>
+</html>

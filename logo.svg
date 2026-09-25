@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <!-- Icon Mark -->
+  <g transform="translate(10, 10)">
+    <rect x="0" y="0" width="60" height="60" rx="16" fill="url(#logoGrad)" />
+    <path d="M 16 18 C 16 14 19 11 24 11 L 36 11 C 41 11 44 14 44 18 L 44 32 C 44 36 41 39 36 39 L 26 39 L 18 47 L 19 39 C 17 38 16 35 16 32 Z" fill="#ffffff" />
+    <path d="M 25 25 L 35 21 L 32 31 L 29 27 Z" fill="url(#logoGrad)" />
+  </g>
+  <!-- Typography -->
+  <text x="82" y="48" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" font-size="28" font-weight="700" fill="#ffffff" letter-spacing="-0.5">
+    Comment<tspan fill="#818cf8">2</tspan>DM
+  </text>
+</svg>

@@ -1,53 +1,267 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Nudge Pricing</title><meta name="description" content="Nudge Instagram automation plans and subscription pricing.">
-<link rel="stylesheet" href="styles.css">
-<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing — Comment2DM</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{--accent:#6366f1;--accent2:#ec4899;--bg:#09090b;--surface:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.08);--text:#f1f5f9;--muted:rgba(255,255,255,0.45);}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
+    a{color:inherit;text-decoration:none;}
+    /* NAV */
+    nav{position:sticky;top:0;z-index:100;background:rgba(9,9,11,0.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 24px;}
+    .nav-inner{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between;height:60px;}
+    .logo{display:flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:700;}
+    .logo-mark{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:1.2rem;}
+    .nav-links{display:flex;gap:28px;font-size:0.88rem;color:var(--muted);}
+    .nav-links a:hover{color:var(--text);}
+    .nav-actions{display:flex;align-items:center;gap:10px;}
+    .btn{display:inline-flex;align-items:center;padding:9px 20px;border-radius:10px;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;text-decoration:none;}
+    .btn-ghost{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);}
+    .btn-ghost:hover{background:rgba(255,255,255,0.1);}
+    .btn-accent{background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;}
+    .btn-accent:hover{opacity:0.85;}
+    .btn-elite{background:linear-gradient(135deg,#8b5cf6,var(--accent2));color:#fff;}
+    /* HERO */
+    .hero{text-align:center;padding:72px 24px 40px;max-width:700px;margin:auto;}
+    .eyebrow{font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:12px;}
+    h1{font-size:clamp(2rem,5vw,3rem);font-weight:800;line-height:1.15;margin-bottom:16px;}
+    .grad{background:linear-gradient(135deg,var(--accent),#8b5cf6,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .hero p{color:var(--muted);font-size:1.05rem;max-width:500px;margin:auto;}
+    /* TOGGLE */
+    .toggle-row{display:flex;align-items:center;justify-content:center;gap:12px;margin:28px auto 0;}
+    .toggle-label{font-size:0.9rem;color:var(--muted);}
+    .toggle-label.active{color:var(--text);font-weight:600;}
+    .toggle-switch-pub{position:relative;width:48px;height:26px;}
+    .toggle-switch-pub input{opacity:0;width:0;height:0;}
+    .ts-slider{position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,0.1);border-radius:26px;transition:0.3s;}
+    .ts-slider:before{content:'';position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s;}
+    .toggle-switch-pub input:checked + .ts-slider{background:linear-gradient(90deg,var(--accent),#8b5cf6);}
+    .toggle-switch-pub input:checked + .ts-slider:before{transform:translateX(22px);}
+    .save-badge{background:rgba(16,185,129,0.15);color:#10b981;border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:600;}
+    /* PLANS */
+    .plans-section{max-width:1100px;margin:40px auto;padding:0 24px;}
+    .plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+    @media(max-width:900px){.plans-grid{grid-template-columns:1fr;max-width:420px;margin:auto;}}
+    .plan-card-pub{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:transform 0.25s,box-shadow 0.25s;}
+    .plan-card-pub:hover{transform:translateY(-5px);box-shadow:0 16px 48px rgba(99,102,241,0.15);}
+    .plan-card-pub.popular{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.07);}
+    .popular-tag{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--accent),#8b5cf6);color:#fff;font-size:0.72rem;font-weight:700;padding:4px 16px;border-radius:0 0 10px 10px;}
+    .plan-name-pub{font-size:1rem;font-weight:700;color:var(--text);margin-top:8px;}
+    .price-pub{margin:14px 0 6px;}
+    .price-pub .amount{font-size:2.4rem;font-weight:800;color:var(--text);}
+    .price-pub .period{font-size:0.84rem;color:var(--muted);}
+    .price-pub .orig{font-size:0.78rem;color:rgba(255,255,255,0.25);text-decoration:line-through;display:block;margin-top:2px;}
+    .plan-desc-pub{font-size:0.82rem;color:var(--muted);margin-bottom:18px;}
+    .features-pub{list-style:none;padding:0;flex:1;margin-bottom:20px;}
+    .features-pub li{font-size:0.85rem;color:rgba(255,255,255,0.65);padding:6px 0;display:flex;align-items:flex-start;gap:8px;border-bottom:1px solid rgba(255,255,255,0.04);}
+    .features-pub li:last-child{border-bottom:none;}
+    .features-pub li .tick{color:#10b981;font-weight:700;flex-shrink:0;}
+    .plan-btn{width:100%;padding:13px;border-radius:12px;font-size:0.92rem;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;margin-top:auto;}
+    .plan-btn.free{background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--text);}
+    .plan-btn.pro{background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;}
+    .plan-btn.elite{background:linear-gradient(135deg,#8b5cf6,var(--accent2));color:#fff;}
+    /* COMPARISON TABLE */
+    .compare-section{max-width:900px;margin:60px auto;padding:0 24px;}
+    .compare-section h2{text-align:center;font-size:1.6rem;font-weight:700;margin-bottom:8px;}
+    .compare-section .sub{text-align:center;color:var(--muted);font-size:0.9rem;margin-bottom:28px;}
+    .compare-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+    .compare-table th{padding:14px 20px;font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);background:rgba(255,255,255,0.02);}
+    .compare-table th:first-child{text-align:left;}
+    .compare-table td{padding:13px 20px;font-size:0.86rem;text-align:center;border-top:1px solid var(--border);color:rgba(255,255,255,0.7);}
+    .compare-table td:first-child{text-align:left;font-weight:500;color:var(--text);}
+    .compare-table tr:hover td{background:rgba(255,255,255,0.01);}
+    .check{color:#10b981;font-size:1rem;}
+    .cross{color:rgba(255,255,255,0.2);}
+    /* FAQ */
+    .faq-section{max-width:700px;margin:60px auto;padding:0 24px;}
+    .faq-section h2{font-size:1.6rem;font-weight:700;margin-bottom:24px;text-align:center;}
+    .faq-item-pub{border-bottom:1px solid var(--border);}
+    .faq-q-pub{display:flex;align-items:center;justify-content:space-between;padding:16px 0;cursor:pointer;gap:10px;}
+    .faq-q-pub span{font-size:0.92rem;font-weight:500;color:var(--text);}
+    .faq-arr{color:var(--muted);transition:transform 0.3s;}
+    .faq-item-pub.open .faq-arr{transform:rotate(180deg);}
+    .faq-ans{max-height:0;overflow:hidden;transition:max-height 0.3s;}
+    .faq-item-pub.open .faq-ans{max-height:200px;}
+    .faq-ans p{color:var(--muted);font-size:0.86rem;line-height:1.6;padding-bottom:16px;}
+    /* CTA BANNER */
+    .cta-banner{margin:40px auto 60px;padding:0 24px;max-width:1100px;}
+    .cta-inner{background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(236,72,153,0.1));border:1px solid rgba(99,102,241,0.2);border-radius:20px;padding:48px 32px;text-align:center;}
+    .cta-inner h2{font-size:1.8rem;font-weight:700;margin-bottom:10px;}
+    .cta-inner p{color:var(--muted);font-size:0.96rem;margin-bottom:24px;}
+    /* FOOTER */
+    footer{border-top:1px solid var(--border);padding:20px 24px;text-align:center;color:var(--muted);font-size:0.82rem;}
+    footer a{color:var(--muted);margin:0 10px;}
+    footer a:hover{color:var(--text);}
+    @media(max-width:768px){.nav-links{display:none;}.hero{padding:48px 16px 28px;}}
+  </style>
 </head>
-<body class="app-body" data-page="pricing">
-<div class="app-shell">
-<aside class="app-sidebar" id="appSidebar">
-<div class="sidebar-top"><a href="index.html" class="logo" aria-label="Nudge home"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose" aria-label="Close menu">×</button></div>
-<nav class="app-nav" aria-label="Dashboard navigation">
-<a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a>
-<a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a>
-<a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a>
-<a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a>
-<a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a>
-<a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">$</span>Creator Toolkit</a>
-<a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a>
-<a href="pricing.html" data-nav="pricing" class="active"><span class="nav-icon">₹</span>Pricing</a>
-<a href="help.html" data-nav="help"><span class="nav-icon">?</span>Help Desk</a>
-</nav>
-<div class="sidebar-foot"><p>Instagram automation for creators.</p><a href="index.html">Back to website</a></div>
-</aside>
-<div class="app-main">
-<header class="app-header">
-        <div class="app-header-left">
-          <button class="menu-button" id="sidebarOpen" aria-label="Open navigation menu" aria-expanded="false"><span></span><span></span><span></span></button>
-          <a href="index.html" class="app-header-logo" aria-label="Nudge home"><span class="logo-mark"></span><span>Nudge</span></a>
-          <div class="app-header-copy">
-            <p class="eyebrow">Workspace</p>
-            <h1>Pricing</h1>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-mark">⚡</span>
+        Comment<span style="color:#ec4899;">2</span>DM
+      </a>
+      <div class="nav-links">
+        <a href="index.html#features">Features</a>
+        <a href="pricing.html" style="color:#818cf8;font-weight:600;">Pricing</a>
+        <a href="index.html#how-it-works">How it Works</a>
+      </div>
+      <div class="nav-actions">
+        <a href="login.html" class="btn btn-ghost">Login</a>
+        <a href="login.html?action=signup" class="btn btn-accent">Get Started Free</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="eyebrow">Simple Pricing</div>
+    <h1>Transparent plans,<br><span class="grad">no surprises.</span></h1>
+    <p>Start free. Upgrade when you're ready. All plans include core comment-to-DM automation.</p>
+    <div class="toggle-row">
+      <span class="toggle-label active" id="monthlyLabel">Monthly</span>
+      <label class="toggle-switch-pub">
+        <input type="checkbox" id="billingToggle">
+        <span class="ts-slider"></span>
+      </label>
+      <span class="toggle-label" id="annualLabel">Annual</span>
+      <span class="save-badge">Save 17% 🎉</span>
+    </div>
+  </div>
+
+  <div class="plans-section">
+    <div class="plans-grid" id="plansGrid">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- Comparison table -->
+  <div class="compare-section">
+    <h2>Compare all features</h2>
+    <p class="sub">Everything you need to know before choosing a plan.</p>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Free</th>
+          <th>Pro</th>
+          <th>Elite</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Instagram Accounts</td><td>1</td><td>3</td><td>10</td></tr>
+        <tr><td>Automations</td><td>3</td><td>25</td><td>Unlimited</td></tr>
+        <tr><td>Monthly DMs</td><td>300</td><td>5,000</td><td>50,000</td></tr>
+        <tr><td>AI Credits</td><td>100</td><td>2,500</td><td>30,000</td></tr>
+        <tr><td>Keyword Triggers</td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+        <tr><td>All Comments Trigger</td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+        <tr><td>Analytics Dashboard</td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+        <tr><td>Creator Studio AI</td><td>Limited</td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+        <tr><td>Priority Support</td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+        <tr><td>Analytics Export</td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td></tr>
+        <tr><td>Custom Webhooks</td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td></tr>
+        <tr><td>Dedicated Support</td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FAQ -->
+  <div class="faq-section">
+    <h2>Frequently Asked Questions</h2>
+    <div id="pricingFaq"></div>
+  </div>
+
+  <!-- CTA Banner -->
+  <div class="cta-banner">
+    <div class="cta-inner">
+      <h2>Ready to automate your Instagram DMs?</h2>
+      <p>Join creators using Comment2DM. No credit card required to start.</p>
+      <a href="login.html?action=signup" class="btn btn-accent" style="font-size:1rem;padding:14px 32px;">Get Started for Free →</a>
+    </div>
+  </div>
+
+  <footer>
+    <div style="margin-bottom:10px;">
+      <strong>⚡ Comment2DM</strong> &nbsp;·&nbsp; Automating Instagram DMs for creators worldwide
+    </div>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="refund.html">Refund Policy</a>
+    <a href="contact.html">Contact</a>
+    <div style="margin-top:10px;">© 2024 Comment2DM. All rights reserved.</div>
+  </footer>
+
+  <script>
+    const PLANS = [
+      { key:'free', name:'Free', monthly:0, annual:0, desc:'Perfect to get started', features:['1 Instagram account','3 automations','300 DMs / month','100 AI credits','Keyword triggers','Analytics dashboard'], cta:'Get Started Free', href:'login.html?action=signup' },
+      { key:'pro', name:'Pro', monthly:999, annual:9990, desc:'For growing creators', features:['3 Instagram accounts','25 automations','5,000 DMs / month','2,500 AI credits','All Comments trigger','Priority support'], cta:'Start Pro', href:'login.html?plan=pro', popular:true },
+      { key:'elite', name:'Elite', monthly:2499, annual:24990, desc:'For power users & agencies', features:['10 Instagram accounts','Unlimited automations','50,000 DMs / month','30,000 AI credits','Analytics export','Custom webhooks','Dedicated support'], cta:'Go Elite', href:'login.html?plan=elite' }
+    ];
+
+    let isAnnual = false;
+
+    function renderPlans() {
+      const grid = document.getElementById('plansGrid');
+      if (!grid) return;
+      grid.innerHTML = PLANS.map(p => {
+        const price = isAnnual ? p.annual : p.monthly;
+        const orig = isAnnual && p.monthly > 0 ? `₹${(p.monthly * 12).toLocaleString('en-IN')} /yr` : '';
+        return `<div class="plan-card-pub ${p.popular ? 'popular' : ''}">
+          ${p.popular ? '<div class="popular-tag">⭐ Most Popular</div>' : ''}
+          <div class="plan-name-pub">${p.name}</div>
+          <div class="price-pub">
+            <span class="amount">${price === 0 ? '₹0' : '₹' + price.toLocaleString('en-IN')}</span>
+            <span class="period">${price === 0 ? ' forever' : isAnnual ? ' / year' : ' / month'}</span>
+            ${orig ? `<span class="orig">${orig}</span>` : '<span style="height:18px;display:block;"></span>'}
           </div>
-        </div>
-        <div class="profile-area"><div class="profile-copy"><strong>Plans</strong><span>Choose what fits your workflow</span></div></div>
-      </header>
-<main class="app-content">
-<section class="accounts-heading"><div><p class="eyebrow">Nudge plans</p><h2>Choose your plan</h2><p>Start free, then upgrade through secure Razorpay checkout when you need more capacity.</p></div></section>
-<div class="pricing-toggle" id="pricingToggle"><button class="active" data-cycle="monthly">Monthly</button><button data-cycle="annual">Annual <span class="save">— save up to 20%</span></button></div>
-<div class="pricing-grid">
-<div class="plan"><div class="plan-name">Free</div><div class="plan-price">₹0<span>/mo</span></div><p class="plan-desc">Try Nudge before subscribing.</p><a href="dashboard.html" class="btn btn-ghost btn-block">Current free plan</a><ul class="plan-features"><li><span class="check">✓</span>300 DMs/mo</li><li><span class="check">✓</span>1 Instagram account</li><li><span class="check">✓</span>3 active automations</li><li><span class="check">✓</span>100 AI credits/mo</li></ul></div>
-<div class="plan popular"><div class="plan-tag">Creator</div><div class="plan-name">Creator</div><div class="plan-price price-monthly">₹299<span>/mo</span></div><div class="plan-price price-annual" style="display:none">₹249<span>/mo, billed yearly</span></div><p class="plan-desc">For creators automating daily conversations.</p><a href="billing.html?plan=creator&billing=monthly" data-plan-button="creator" class="btn btn-accent btn-block">Get Creator</a><ul class="plan-features"><li><span class="check">✓</span>5,000 DMs/mo</li><li><span class="check">✓</span>2 Instagram accounts</li><li><span class="check">✓</span>20 active automations</li><li><span class="check">✓</span>2,000 AI credits/mo</li><li><span class="check">✓</span>Advanced creator tools</li></ul></div>
-<div class="plan"><div class="plan-name">Growth</div><div class="plan-price price-monthly">₹699<span>/mo</span></div><div class="plan-price price-annual" style="display:none">₹579<span>/mo, billed yearly</span></div><p class="plan-desc">For growing creators and small teams.</p><a href="billing.html?plan=growth&billing=monthly" data-plan-button="growth" class="btn btn-ghost btn-block">Get Growth</a><ul class="plan-features"><li><span class="check">✓</span>20,000 DMs/mo</li><li><span class="check">✓</span>5 Instagram accounts</li><li><span class="check">✓</span>100 active automations</li><li><span class="check">✓</span>10,000 AI credits/mo</li><li><span class="check">✓</span>Advanced creator tools</li></ul></div>
-<div class="plan"><div class="plan-name">Scale</div><div class="plan-price price-monthly">₹1,499<span>/mo</span></div><div class="plan-price price-annual" style="display:none">₹1,199<span>/mo, billed yearly</span></div><p class="plan-desc">For agencies and high-volume operators.</p><a href="billing.html?plan=scale&billing=monthly" data-plan-button="scale" class="btn btn-ghost btn-block">Get Scale</a><ul class="plan-features"><li><span class="check">✓</span>75,000 DMs/mo</li><li><span class="check">✓</span>15 Instagram accounts</li><li><span class="check">✓</span>Unlimited active automations</li><li><span class="check">✓</span>30,000 AI credits/mo</li><li><span class="check">✓</span>Advanced creator tools</li></ul></div>
-</div>
-<div class="activity-card" style="margin-top:24px"><div class="card-heading"><div><h2>How purchase works</h2><p>Choose a paid plan → sign in if needed → Razorpay opens → complete payment → Nudge verifies the payment and activates the subscription.</p></div></div></div>
-</main></div></div><div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-<script src="dashboard.js"></script>
-<script>
-(function(){var t=document.getElementById('pricingToggle');if(!t)return;t.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var cycle=b.getAttribute('data-cycle');t.querySelectorAll('button').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('.price-monthly').forEach(function(x){x.style.display=cycle==='monthly'?'':'none'});document.querySelectorAll('.price-annual').forEach(function(x){x.style.display=cycle==='annual'?'':'none'});document.querySelectorAll('[data-plan-button]').forEach(function(x){var p=x.getAttribute('data-plan-button');x.href='billing.html?plan='+encodeURIComponent(p)+'&billing='+cycle})})})();
-</script>
-</body></html>
+          <div class="plan-desc-pub">${p.desc}</div>
+          <ul class="features-pub">${p.features.map(f => `<li><span class="tick">✓</span>${f}</li>`).join('')}</ul>
+          <a href="${p.href}" class="plan-btn ${p.key}">${p.cta} →</a>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('billingToggle').addEventListener('change', (e) => {
+      isAnnual = e.target.checked;
+      const ml = document.getElementById('monthlyLabel');
+      const al = document.getElementById('annualLabel');
+      if (ml) ml.classList.toggle('active', !isAnnual);
+      if (al) al.classList.toggle('active', isAnnual);
+      renderPlans();
+    });
+
+    renderPlans();
+
+    // FAQ
+    const faqs = [
+      { q: 'Can I change plans later?', a: 'Yes! You can upgrade or downgrade at any time from your Billing page. Upgrades are effective immediately. Downgrades take effect at your next billing cycle.' },
+      { q: 'Is there a free trial for Pro or Elite?', a: 'You can start with our Free plan to test the core features. We occasionally run promotions — follow us on Twitter/X to hear about them first.' },
+      { q: 'What payment methods are accepted?', a: 'We accept all major credit/debit cards, UPI, net banking, and wallets via Razorpay. All payments are processed securely.' },
+      { q: 'What happens if I exceed my DM limit?', a: 'Automations are paused for the rest of the month once you hit your DM limit. They resume automatically on your next billing cycle. Upgrade to increase your limit instantly.' },
+      { q: 'Can I get a refund?', a: 'We offer refunds within 7 days of your first payment. See our Refund Policy for full details. Contact billing@comment2dm.com with your order ID.' }
+    ];
+
+    const faqContainer = document.getElementById('pricingFaq');
+    faqContainer.innerHTML = faqs.map((f, i) => `
+      <div class="faq-item-pub" id="pf${i}">
+        <div class="faq-q-pub" data-i="${i}"><span>${f.q}</span><span class="faq-arr">▼</span></div>
+        <div class="faq-ans"><p>${f.a}</p></div>
+      </div>
+    `).join('');
+
+    faqContainer.querySelectorAll('.faq-q-pub').forEach(q => {
+      q.addEventListener('click', () => {
+        const item = document.getElementById('pf' + q.dataset.i);
+        const open = item.classList.contains('open');
+        faqContainer.querySelectorAll('.faq-item-pub').forEach(it => it.classList.remove('open'));
+        if (!open) item.classList.add('open');
+      });
+    });
+  </script>
+</body>
+</html>

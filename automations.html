@@ -3,127 +3,324 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Automations - Nudge</title>
+  <title>Automations — Comment2DM</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
-<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
 </head>
 <body class="app-body" data-page="automations">
+
   <div class="app-shell">
+    <!-- Sidebar -->
     <aside class="app-sidebar" id="appSidebar">
       <div class="sidebar-top">
-        <a href="index.html" class="logo" aria-label="Nudge home"><span class="logo-mark"></span>Nudge</a>
-        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">x</button>
+        <a href="dashboard.html" class="logo">
+          <span class="logo-mark">⚡</span>
+          <span>Comment<span style="color:var(--accent-light);">2</span>DM</span>
+        </a>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar (<<)">
+          <span id="collapseIcon">«</span>
+        </button>
       </div>
-      <nav class="app-nav" aria-label="Dashboard navigation">
-        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a>
-        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a>
-        <a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a>
-        <a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a>
-        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a><a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">$</span>Creator Toolkit</a>
-        <a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a><a href="pricing.html" data-nav="pricing"><span class="nav-icon">₹</span>Pricing</a><a href="help.html" data-nav="help"><span class="nav-icon">?</span>Help Desk</a>
+
+      <!-- Connected Instagram Account Switcher -->
+      <div class="sidebar-account">
+        <button class="account-selector" id="accountSwitcherBtn">
+          <div class="account-pill">
+            <div class="account-avatar-img" id="sidebarIgAvatar" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.75rem;">IG</div>
+            <div class="account-meta">
+              <span class="account-username" id="sidebarIgUsername">No Account</span>
+              <span class="account-status" id="sidebarIgStatus">Connect now</span>
+            </div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+
+      <!-- App Navigation -->
+      <nav class="app-nav">
+        <a href="dashboard.html" data-nav="dashboard">
+          <span class="nav-icon">🏠</span>
+          <span>Home</span>
+        </a>
+        <a href="instagram-accounts.html" data-nav="instagram">
+          <span class="nav-icon">📸</span>
+          <span>Instagram Accounts</span>
+        </a>
+        <a href="automations.html?action=new" data-nav="create-automation">
+          <span class="nav-icon">⚡</span>
+          <span>Create Automation</span>
+        </a>
+        <a href="automations.html" class="active" data-nav="automations">
+          <span class="nav-icon">⚙️</span>
+          <span>Automations</span>
+        </a>
+        <a href="creator-tools.html" data-nav="creator-tools">
+          <span class="nav-icon">✨</span>
+          <span>Creator Studio AI</span>
+        </a>
+        <a href="analytics.html" data-nav="analytics">
+          <span class="nav-icon">📊</span>
+          <span>Analytics</span>
+        </a>
+        <a href="settings.html" data-nav="settings">
+          <span class="nav-icon">👤</span>
+          <span>Settings</span>
+        </a>
+        <a href="help.html" data-nav="help">
+          <span class="nav-icon">💬</span>
+          <span>Help Desk</span>
+        </a>
       </nav>
+
+      <!-- Sidebar Footer: DM Limit Bar & Mini-Pie Gauge -->
       <div class="sidebar-foot">
-        <p>Instagram automation for creators.</p>
-        <a href="index.html">Back to website</a>
+        <div class="dm-limit-card">
+          <div class="dm-limit-header">
+            <span>Monthly DMs</span>
+            <strong id="dmLimitText">0 / 300</strong>
+          </div>
+          <div class="dm-progress-track">
+            <div class="dm-progress-fill" id="dmProgressFill" style="width: 5%;"></div>
+          </div>
+          <a href="billing.html" class="btn btn-ghost btn-sm btn-block" style="font-size:0.78rem; padding:5px;">
+            Upgrade Plan ↗
+          </a>
+        </div>
+
+        <div class="pie-gauge-collapsed" id="pieGaugeCollapsed" title="View DM Limit & Upgrade">
+          <div class="pie-gauge" id="pieGaugeCircle">
+            <div class="pie-gauge-inner" id="pieGaugeInner">0%</div>
+          </div>
+        </div>
       </div>
     </aside>
+
+    <!-- Main Workspace -->
     <div class="app-main">
       <header class="app-header">
         <div class="app-header-left">
-          <button class="menu-button" id="sidebarOpen" aria-label="Open navigation menu" aria-expanded="false"><span></span><span></span><span></span></button>
-          <a href="index.html" class="app-header-logo" aria-label="Nudge home"><span class="logo-mark"></span><span>Nudge</span></a>
-          <div class="app-header-copy">
-            <p class="eyebrow">Workspace</p>
-            <h1>Automations</h1>
+          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation menu">☰</button>
+          <div>
+            <span class="eyebrow" style="margin-bottom:0;">Automations</span>
+            <h2 style="font-size:1.15rem; font-weight:700;">Comment-to-DM Engine</h2>
           </div>
         </div>
-        <div class="profile-area"><div class="profile-copy">
-            <strong id="userName">Loading...</strong>
-            <span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span>
-          </div></div>
+
+        <div class="header-user-menu">
+          <a href="help.html" class="notification-bell" title="Support Help Desk"><span>💬</span></a>
+          <div style="position:relative;">
+            <button class="user-profile-trigger" id="userProfileBtn">
+              <div class="user-avatar-circle" id="userAvatarInitial">U</div>
+              <div style="text-align:left; display:flex; flex-direction:column;">
+                <span style="font-size:0.86rem; font-weight:600; color:#fff;" id="topbarUserName">Loading...</span>
+                <span class="plan-badge" id="topbarPlanBadge">Free</span>
+              </div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+              <div style="padding:8px 12px;">
+                <strong style="display:block; font-size:0.88rem; color:#fff;" id="dropdownName">User</strong>
+                <small style="color:var(--ink-muted);" id="dropdownEmail">user@domain.com</small>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="settings.html" class="user-dropdown-item">👤 Account Settings</a>
+              <a href="billing.html" class="user-dropdown-item">💎 Billing & Plans</a>
+              <a href="help.html" class="user-dropdown-item">💬 Support</a>
+              <div class="dropdown-divider"></div>
+              <button type="button" class="user-dropdown-item" id="logoutBtn" style="color:var(--rose); width:100%; text-align:left;">🚪 Sign out</button>
+            </div>
+          </div>
+        </div>
       </header>
+
       <main class="app-content">
         <div id="dashboardError" class="form-error"></div>
         <div id="automationNotice" class="success-notice" hidden></div>
 
-        <section class="accounts-heading">
+        <!-- Heading & Action Button -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:28px;">
           <div>
-            <p class="eyebrow">Workflows</p>
-            <h2>Comment-to-DM Automations</h2>
-            <p>Automatically reply to Instagram comments with private messages.</p>
+            <h1 style="font-size:1.8rem; margin-bottom:4px;">Comment-to-DM Workflows</h1>
+            <p style="color:var(--ink-secondary); font-size:0.92rem;">
+              Set triggers to auto-reply to comments on your Instagram Reels with private DMs and public replies.
+            </p>
           </div>
-          <button class="btn btn-accent" id="openCreateAutomation" hidden>Create automation</button>
-        </section>
+          <button class="btn btn-accent" id="openCreateBtn">
+            <span>+ Create Automation</span>
+          </button>
+        </div>
 
-        <!-- Warning when NO Instagram account is connected -->
-        <section id="noAccountWarning" class="placeholder-card accounts-empty" hidden>
-          <div class="placeholder-icon">i</div>
-          <h2>Connect an Instagram account first</h2>
-          <p>To create Comment-to-DM automations, you need to connect at least one professional Instagram account to Nudge.</p>
-          <a href="instagram-accounts.html" class="btn btn-accent">Go to Instagram Accounts</a>
-        </section>
+        <!-- Warning Card if 0 IG accounts connected -->
+        <div id="noAccountWarning" class="apple-card" style="text-align:center; padding:48px 24px; margin-bottom:28px;" hidden>
+          <div style="font-size:2.5rem; margin-bottom:12px;">📸</div>
+          <h2 style="font-size:1.3rem; margin-bottom:6px;">Connect an Instagram Account First</h2>
+          <p style="color:var(--ink-secondary); max-width:440px; margin:0 auto 20px; font-size:0.9rem;">
+            To create Comment-to-DM automations, connect your professional Instagram account via official Meta Business Login.
+          </p>
+          <a href="/api/instagram/authorize" class="btn btn-accent">Connect Instagram Now</a>
+        </div>
 
-        <!-- Automation Create / Edit Form Card -->
-        <section id="automationFormCard" class="activity-card automation-card-form" hidden>
-          <div class="card-heading">
+        <!-- MULTI-STEP CREATION FORM + LIVE PHONE SIMULATOR -->
+        <section id="automationFormCard" class="apple-card" style="margin-bottom:32px;" hidden>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--glass-border);">
             <div>
-              <h2 id="automationFormHeading">Create Automation</h2>
-              <p>Choose the account, optionally target one Reel, then set the keyword and private reply.</p>
+              <h2 style="font-size:1.3rem; margin-bottom:2px;" id="formHeadingTitle">Create Automation</h2>
+              <p style="color:var(--ink-secondary); font-size:0.86rem;">Select your account, choose a Reel or trigger on all, and draft your DM.</p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" id="cancelFormBtn">✕ Close</button>
+          </div>
+
+          <div class="builder-layout">
+            <!-- Left Column: Form Controls -->
+            <form id="automationForm" novalidate>
+              <input type="hidden" id="automationId" value="" />
+              <input type="hidden" id="selectedMediaId" value="" />
+              <input type="hidden" id="selectedMediaUrl" value="" />
+
+              <!-- Step 1: Instagram Account -->
+              <div class="form-group">
+                <label class="form-label" for="automationAccountSelect">1. Target Instagram Account</label>
+                <select id="automationAccountSelect" class="form-select" required></select>
+              </div>
+
+              <!-- Step 2: Target Reel / Post Picker -->
+              <div class="form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <label class="form-label" style="margin-bottom:0;">2. Target Reel or Post</label>
+                  <button type="button" class="btn btn-ghost btn-sm" id="refreshReelsBtn" style="font-size:0.75rem; padding:3px 8px;">Refresh Reels ↻</button>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:12px;">
+                  <button type="button" class="btn btn-ghost btn-sm active" id="targetAllReelsBtn" style="border-color:var(--accent);">
+                    <span>🎬 All Reels & Posts</span>
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm" id="targetSpecificReelBtn">
+                    <span>🎯 Specific Reel</span>
+                  </button>
+                </div>
+
+                <!-- Reel Visual Picker Box (Shown when Specific Reel is toggled) -->
+                <div id="reelPickerBox" style="display:none; background:rgba(0,0,0,0.25); border-radius:var(--radius-m); padding:12px; border:1px solid var(--glass-border); margin-bottom:8px;">
+                  <div class="reel-picker-grid" id="reelPickerGrid">
+                    <!-- Loaded dynamically -->
+                    <div style="text-align:center; padding:24px; color:var(--ink-muted); grid-column:1/-1;">Loading reels from Instagram…</div>
+                  </div>
+                  <div id="selectedReelPreview" style="font-size:0.8rem; color:var(--accent-light); margin-top:8px; display:none;">
+                    Selected: <span id="selectedReelText"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 3: Trigger Condition -->
+              <div class="form-group">
+                <label class="form-label">3. Trigger Condition</label>
+                <div style="display:flex; gap:12px; margin-bottom:12px;">
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                    <input type="radio" name="triggerTypeRadio" id="triggerKeywordRadio" value="keyword" checked />
+                    <span>Specific Keyword</span>
+                  </label>
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                    <input type="radio" name="triggerTypeRadio" id="triggerAllRadio" value="all" />
+                    <span>Any Comment (Emoji or Text) <span class="plan-badge pro" style="font-size:0.65rem;">Pro</span></span>
+                  </label>
+                </div>
+
+                <div id="keywordInputGroup">
+                  <input type="text" id="automationKeywordInput" class="form-input" placeholder="e.g. LINK, PDF, PRICE" required />
+                  <small style="color:var(--ink-muted); display:block; margin-top:4px;">When a viewer's comment includes this word, the automation triggers instantly.</small>
+                </div>
+              </div>
+
+              <!-- Step 4: Private DM Message -->
+              <div class="form-group">
+                <label class="form-label" for="automationDmMessageInput">4. Private Reply (Direct Message)</label>
+                <textarea id="automationDmMessageInput" class="form-textarea" rows="3" placeholder="Hey! Thanks for commenting. Here is your direct link: https://yourbrand.com/deal 🔥" required></textarea>
+                <small style="color:var(--ink-muted); display:block; margin-top:4px;">Sent directly to the commenter's Instagram inbox.</small>
+              </div>
+
+              <!-- Step 5: Public Comment Reply (In-thread) -->
+              <div class="form-group">
+                <label class="form-label" for="automationPublicReplyInput">5. Public Reply in Comment Thread</label>
+                <input type="text" id="automationPublicReplyInput" class="form-input" placeholder="Sent to your DM! Check inbox 📩" />
+                <small style="color:var(--ink-muted); display:block; margin-top:4px;">Leaves a public reply in the reel comment thread confirming the DM was sent.</small>
+              </div>
+
+              <!-- Enabled Toggle -->
+              <div class="form-group" style="margin-bottom:24px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.88rem;">
+                  <input type="checkbox" id="automationEnabledCheckbox" checked style="width:16px; height:16px;" />
+                  <strong>Active (Ready to respond immediately)</strong>
+                </label>
+              </div>
+
+              <div style="display:flex; gap:12px;">
+                <button type="submit" class="btn btn-accent" id="saveAutomationBtn" style="min-width:160px;">
+                  <span>Save Automation</span>
+                </button>
+                <button type="button" class="btn btn-ghost" id="cancelFormBtn2">Cancel</button>
+              </div>
+            </form>
+
+            <!-- Right Column: Interactive Live iPhone Simulator -->
+            <div style="text-align:center;">
+              <span class="eyebrow" style="margin-bottom:12px;">Live Interaction Simulator</span>
+              <div class="phone-simulator-frame">
+                <div class="iphone-notch"></div>
+                <div class="simulator-screen">
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:0.75rem; color:var(--ink-muted);">
+                    <span>Instagram Reel</span>
+                    <span style="color:var(--emerald);">● Live</span>
+                  </div>
+
+                  <!-- Simulated User Comment -->
+                  <div class="sim-comment-bubble" id="simCommentDisplay">
+                    💬 "Can you send the <strong>LINK</strong>?"
+                  </div>
+
+                  <!-- Simulated Public Reply -->
+                  <div class="sim-public-reply" id="simPublicReplyDisplay">
+                    ↳ @yourpage: "Sent to your DM! Check inbox 📩"
+                  </div>
+
+                  <div style="height:12px;"></div>
+
+                  <!-- Simulated Direct Message -->
+                  <div style="font-size:0.7rem; color:var(--ink-muted); text-transform:uppercase; text-align:center;">
+                    — Direct Message Inbox —
+                  </div>
+
+                  <div class="sim-dm-bubble" id="simDmDisplay">
+                    Hey! Thanks for commenting. Here is your direct link: https://yourbrand.com/deal 🔥
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <form id="automationForm" style="margin-top:20px;">
-            <input type="hidden" id="automationId" value="" />
-            
-            <div class="field">
-              <label for="automationAccountSelect">Instagram Account</label>
-              <select id="automationAccountSelect" class="form-control" required></select>
-            </div>
-
-            <div class="field">
-              <label for="automationReelUrlInput">Specific Instagram Reel (optional)</label>
-              <input type="url" id="automationReelUrlInput" class="form-control" placeholder="https://www.instagram.com/reel/..." autocomplete="off" />
-              <p id="automationReelStatus" style="font-size:0.8rem; color:var(--ink-soft); margin-top:4px;">Leave empty to let this automation match comments on any Reel for this account.</p>
-            </div>
-
-            <div class="field">
-              <label for="automationKeywordInput">Trigger Keyword</label>
-              <input type="text" id="automationKeywordInput" class="form-control" placeholder="e.g. LINK" required />
-              <p style="font-size:0.8rem; color:var(--ink-soft); margin-top:4px;">Matches comments containing this keyword (case-insensitive).</p>
-            </div>
-
-            <div class="field">
-              <label for="automationDmMessageInput">Private Reply / DM Message</label>
-              <textarea id="automationDmMessageInput" class="form-control" rows="3" placeholder="e.g. Thanks for commenting! Here's the link you requested." required></textarea>
-            </div>
-
-            <div class="field">
-              <label class="checkbox-row" style="cursor:pointer;">
-                <input type="checkbox" id="automationEnabledCheckbox" checked />
-                <span>Enable this automation</span>
-              </label>
-            </div>
-
-            <div class="form-actions" style="display:flex; gap:12px; margin-top:24px;">
-              <button type="submit" class="btn btn-accent" id="saveAutomationBtn">Save Automation</button>
-              <button type="button" class="btn btn-ghost" id="cancelAutomationBtn">Cancel</button>
-            </div>
-          </form>
         </section>
 
-        <!-- Automations Card List -->
-        <section id="automationsList" class="instagram-accounts" style="margin-top:20px;"></section>
+        <!-- AUTOMATIONS LIST -->
+        <section id="automationsListSection">
+          <div id="automationsListGrid" style="display:flex; flex-direction:column; gap:14px;">
+            <!-- Populated dynamically -->
+          </div>
 
-        <!-- Empty state when connected account exists but 0 automations -->
-        <section id="automationsEmpty" class="placeholder-card accounts-empty" hidden>
-          <div class="placeholder-icon">a</div>
-          <h2>No automations created yet</h2>
-          <p>Create your first Comment-to-DM automation to respond to Instagram comments automatically.</p>
-          <button class="btn btn-accent" id="createFirstAutomation">Create automation</button>
+          <!-- Empty State -->
+          <div id="automationsEmptyState" class="apple-card" style="text-align:center; padding:48px 24px;" hidden>
+            <div style="font-size:2.4rem; margin-bottom:12px;">⚡</div>
+            <h2 style="font-size:1.25rem; margin-bottom:6px;">No Automations Created Yet</h2>
+            <p style="color:var(--ink-secondary); font-size:0.9rem; max-width:420px; margin:0 auto 20px;">
+              Create your first Comment-to-DM automation to automatically turn Instagram Reel comments into private sales and leads.
+            </p>
+            <button class="btn btn-accent" id="createFirstBtn">+ Create Your First Automation</button>
+          </div>
         </section>
       </main>
     </div>
   </div>
-  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
   <script src="dashboard.js"></script>
+  <script src="automations.js"></script>
 </body>
 </html>

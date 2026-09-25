@@ -1,314 +1,1360 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Nudge | Instagram Automation for Creators</title>
-<meta name="description" content="Nudge helps creators automate authorized Instagram conversations using official Meta APIs." />
-<link rel="canonical" href="https://nudge-dto0.onrender.com/index.html" />
-<meta property="og:title" content="Nudge | Instagram Automation for Creators" />
-<meta property="og:description" content="Turn Instagram conversations into sales with simple, official automation." />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://nudge-dto0.onrender.com/index.html" />
-<meta property="og:image" content="https://nudge-dto0.onrender.com/og-image.svg" />
-<meta name="twitter:card" content="summary_large_image" />
-<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comment2DM — Turn Instagram Comments into DM Conversations Automatically</title>
+  <meta name="description" content="Connect your Instagram, set a keyword trigger, and Comment2DM sends personalized DMs to every commenter. Grow faster, engage smarter." />
+  <meta property="og:title" content="Comment2DM — Automate Instagram DMs" />
+  <meta property="og:description" content="Turn Instagram Comments into DM Conversations — Automatically." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ==========================================
+       CSS RESET & CUSTOM PROPERTIES
+    ========================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09090b;
+      --bg-2: #0f0f12;
+      --bg-3: #141418;
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --accent-1: #6366f1;
+      --accent-2: #8b5cf6;
+      --accent-3: #ec4899;
+      --border: rgba(255,255,255,0.08);
+      --glass-bg: rgba(255,255,255,0.03);
+      --glass-bg-hover: rgba(255,255,255,0.06);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow-glow: 0 0 40px rgba(99,102,241,0.15);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ==========================================
+       PARTICLES BACKGROUND
+    ========================================== */
+    .particles {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px; height: 3px;
+      background: var(--accent-1);
+      border-radius: 50%;
+      opacity: 0.15;
+      animation: floatParticle linear infinite;
+    }
+
+    @keyframes floatParticle {
+      0%   { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10%  { opacity: 0.15; }
+      90%  { opacity: 0.08; }
+      100% { transform: translateY(-10vh) translateX(var(--drift)); opacity: 0; }
+    }
+
+    /* ==========================================
+       UTILITY CLASSES
+    ========================================== */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 4s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border: 1px solid rgba(99,102,241,0.3);
+      background: rgba(99,102,241,0.1);
+      color: #a5b4fc;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(99,102,241,0.5); }
+
+    .btn-ghost {
+      background: var(--glass-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--glass-bg-hover); border-color: rgba(255,255,255,0.15); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { background: var(--glass-bg); }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-1);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .section-subtitle {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    /* Scroll Reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ==========================================
+       NAVIGATION
+    ========================================== */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      padding: 0;
+      transition: background 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+    }
+
+    .nav.scrolled {
+      background: rgba(9,9,11,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 1px 0 var(--border), 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .nav-logo {
+      text-decoration: none;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      flex-shrink: 0;
+    }
+
+    .nav-logo .accent {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+      flex: 1;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .nav-actions .btn { padding: 10px 20px; font-size: 14px; border-radius: 10px; }
+
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 8px;
+      border: none;
+      background: none;
+      margin-left: auto;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px; height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: rotate(45deg) translateY(7px); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translateY(-7px); }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 72px; left: 0; right: 0;
+      background: rgba(9,9,11,0.97);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 24px;
+      z-index: 999;
+    }
+    .mobile-menu.open { display: flex; flex-direction: column; gap: 8px; }
+    .mobile-menu a {
+      display: block;
+      padding: 12px 16px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .mobile-menu a:hover { background: var(--glass-bg); color: var(--text); }
+    .mobile-menu .divider { height: 1px; background: var(--border); margin: 8px 0; }
+    .mobile-menu .btn { width: 100%; justify-content: center; }
+
+    /* ==========================================
+       HERO SECTION
+    ========================================== */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 120px 0 80px;
+      overflow: hidden;
+    }
+
+    .hero-bg-gradient {
+      position: absolute;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 800px; height: 800px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.06) 40%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 80px;
+    }
+
+    .hero-text { animation: heroFadeIn 0.8s ease forwards; }
+
+    @keyframes heroFadeIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-badge { margin-bottom: 24px; }
+
+    .hero-headline {
+      font-size: clamp(38px, 5vw, 62px);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 36px;
+      max-width: 480px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+
+    .trust-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .trust-badge .icon { font-size: 16px; }
+
+    /* iPhone Mockup */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: heroFadeIn 0.8s ease 0.2s both;
+    }
+
+    .iphone {
+      width: 280px;
+      height: 560px;
+      background: #111114;
+      border-radius: 44px;
+      border: 2px solid rgba(255,255,255,0.12);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 60px rgba(99,102,241,0.1);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .iphone-notch {
+      width: 100px; height: 28px;
+      background: #111114;
+      border-radius: 0 0 20px 20px;
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    .iphone-screen {
+      flex: 1;
+      padding: 40px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ig-header {
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .ig-avatar-sm {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    }
+
+    .ig-username-sm { font-size: 12px; font-weight: 600; color: var(--text); }
+    .ig-handle-sm { font-size: 10px; color: var(--text-dim); }
+
+    .ig-reel-thumb {
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(145deg, #1a1a2e, #16213e, #0f3460);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      position: relative;
+    }
+
+    .ig-reel-thumb::before {
+      content: '▶';
+      font-size: 28px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .ig-reel-text { font-size: 9px; opacity: 0.7; }
+
+    .ig-actions {
+      padding: 8px 12px;
+      display: flex;
+      gap: 12px;
+      font-size: 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .ig-comments-section {
+      flex: 1;
+      padding: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ig-comment {
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
+    }
+
+    .ig-comment-avatar {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      flex-shrink: 0;
+    }
+
+    .ig-comment-avatar.orange { background: linear-gradient(135deg, #f7971e, #ffd200); }
+    .ig-comment-avatar.green { background: linear-gradient(135deg, #11998e, #38ef7d); }
+
+    .ig-comment-text { font-size: 10px; line-height: 1.4; }
+    .ig-comment-user { font-weight: 600; color: var(--text); }
+    .ig-comment-msg { color: var(--text-muted); }
+    .ig-comment-keyword { color: #6366f1; font-weight: 700; }
+
+    .ig-dm-bubble {
+      margin: 8px 12px;
+      padding: 10px 12px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.25));
+      border: 1px solid rgba(99,102,241,0.4);
+      border-radius: 12px 12px 12px 4px;
+      font-size: 9px;
+      line-height: 1.5;
+      color: var(--text);
+      position: relative;
+      animation: dmAppear 0.5s ease 1.5s both;
+    }
+
+    @keyframes dmAppear {
+      from { opacity: 0; transform: translateY(10px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .ig-dm-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #a5b4fc;
+      margin-bottom: 3px;
+    }
+
+    .iphone-glow {
+      position: absolute;
+      bottom: -30px; left: 50%;
+      transform: translateX(-50%);
+      width: 200px; height: 60px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.3), transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ==========================================
+       FEATURES SECTION
+    ========================================== */
+    .features-section {
+      padding: 120px 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      background: var(--glass-bg-hover);
+      border-color: rgba(99,102,241,0.3);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 20px rgba(99,102,241,0.1);
+    }
+
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .feature-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .feature-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* ==========================================
+       HOW IT WORKS SECTION
+    ========================================== */
+    .hiw-section {
+      padding: 120px 0;
+      background: var(--bg-2);
+      position: relative;
+    }
+
+    .hiw-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      position: relative;
+      align-items: start;
+    }
+
+    .hiw-step {
+      text-align: center;
+      padding: 40px 32px;
+      position: relative;
+    }
+
+    .hiw-step:not(:last-child)::after {
+      content: '→';
+      position: absolute;
+      right: -16px;
+      top: 50px;
+      font-size: 28px;
+      color: var(--accent-1);
+      z-index: 2;
+    }
+
+    .hiw-step-number {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+      border: 1px solid rgba(99,102,241,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 20px rgba(99,102,241,0.15);
+    }
+
+    .hiw-step-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .hiw-step-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ==========================================
+       SOCIAL PROOF / TESTIMONIALS
+    ========================================== */
+    .testimonials-section {
+      padding: 120px 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .testimonial-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      transition: all 0.3s ease;
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99,102,241,0.3);
+    }
+
+    .stars {
+      color: #fbbf24;
+      font-size: 16px;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-text {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 24px;
+      font-style: italic;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .author-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .author-avatar.violet { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .author-avatar.rose   { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+    .author-avatar.teal   { background: linear-gradient(135deg, #14b8a6, #06b6d4); }
+
+    .author-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .author-handle {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* ==========================================
+       PRICING PREVIEW
+    ========================================== */
+    .pricing-section {
+      padding: 120px 0;
+      background: var(--bg-2);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .pricing-card.popular {
+      border-color: rgba(99,102,241,0.5);
+      background: rgba(99,102,241,0.06);
+    }
+
+    .pricing-card.popular::before {
+      content: 'Most Popular';
+      position: absolute;
+      top: -14px; left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 16px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .pricing-plan { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-1); margin-bottom: 8px; }
+    .pricing-price { font-size: 36px; font-weight: 800; margin-bottom: 4px; }
+    .pricing-price span { font-size: 16px; font-weight: 400; color: var(--text-muted); }
+    .pricing-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+    .pricing-cta { display: block; width: 100%; }
+
+    /* ==========================================
+       CTA BANNER
+    ========================================== */
+    .cta-banner {
+      padding: 100px 0;
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1), rgba(236,72,153,0.1));
+      border-top: 1px solid rgba(99,102,241,0.2);
+      border-bottom: 1px solid rgba(99,102,241,0.2);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-banner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-banner h2 {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .cta-banner p {
+      font-size: 17px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+    }
+
+    /* ==========================================
+       FOOTER
+    ========================================== */
+    .footer {
+      padding: 80px 0 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 60px;
+    }
+
+    .footer-brand .logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      text-decoration: none;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .footer-brand .tagline {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      max-width: 200px;
+    }
+
+    .footer-col-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+    .footer-col a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+    .footer-col a:hover { color: var(--text); }
+
+    .footer-bottom {
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* ==========================================
+       RESPONSIVE
+    ========================================== */
+    @media (max-width: 1024px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links, .nav-actions { display: none; }
+      .hamburger { display: flex; }
+
+      .hero-content {
+        grid-template-columns: 1fr;
+        gap: 60px;
+        text-align: center;
+      }
+      .hero-ctas { justify-content: center; }
+      .trust-badges { justify-content: center; }
+      .hero-sub { max-width: 100%; }
+      .hero-visual { order: -1; }
+      .iphone { width: 220px; height: 440px; }
+
+      .features-grid { grid-template-columns: 1fr; }
+      .hiw-steps { grid-template-columns: 1fr; gap: 0; }
+      .hiw-step:not(:last-child)::after { content: '↓'; right: 50%; top: auto; bottom: -16px; transform: translateX(50%); }
+      .hiw-step { padding: 32px 24px; }
+
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 360px; }
+
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .footer-brand { grid-column: 1 / -1; }
+      .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-headline { font-size: 32px; }
+      .hero-ctas { flex-direction: column; }
+      .hero-ctas .btn { width: 100%; justify-content: center; }
+      .trust-badges { gap: 12px; }
+      .footer-top { grid-template-columns: 1fr; }
+      .iphone { width: 200px; height: 400px; }
+    }
+  </style>
 </head>
 <body>
 
-<header class="site-header">
-  <div class="wrap">
-    <a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a>
-    <nav class="main-nav">
-      <a href="#how-it-works">How it works</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="terms.html">Terms</a>
-    </nav>
-    <div class="header-actions">
-      <a href="login.html" class="btn btn-ghost">Log in</a>
-      <a href="login.html?tab=signup" class="btn btn-primary">Get started</a>
-    </div>
-    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
-  </div>
-</header>
+  <!-- PARTICLE BACKGROUND -->
+  <div class="particles" id="particles"></div>
 
-<section class="hero">
-  <div class="wrap">
-    <div class="hero-copy">
-      <p class="eyebrow">Instagram automation</p>
-      <h1>Every DM answered<br>while you're <em>filming the next one</em>.</h1>
-      <p class="lede">Nudge watches your comments, story replies and DMs, and responds the moment someone raises their hand — so no lead goes cold just because you were offline.</p>
-      <div class="hero-ctas">
-        <a href="login.html?tab=signup" class="btn btn-accent">Start free</a>
-        <a href="#how-it-works" class="btn btn-ghost">See how it works</a>
-      </div>
-      <ul class="hero-fine">
-        <li>No credit card</li>
-        <li>Live in under 2 minutes</li>
-        <li>Free plan, forever</li>
+  <!-- ==========================================
+       NAVIGATION
+  ========================================== -->
+  <nav class="nav" id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">⚡ Comment<span class="accent">2</span>DM</a>
+
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How it Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#">Blog</a></li>
       </ul>
+
+      <div class="nav-actions">
+        <a href="login.html" class="btn btn-ghost">Login</a>
+        <a href="login.html" class="btn btn-primary">Get Started Free</a>
+      </div>
+
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
     </div>
-    <div class="hero-visual">
-      <div class="chat-mock">
-        <div class="who">
-          <div class="avatar"></div>
-          <div>
-            <div class="who-name">studio.mara</div>
-            <div class="who-sub">Comment on "New drop 🔥" · just now</div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#features" class="mobile-link">Features</a>
+    <a href="#how-it-works" class="mobile-link">How it Works</a>
+    <a href="#pricing" class="mobile-link">Pricing</a>
+    <a href="#" class="mobile-link">Blog</a>
+    <div class="divider"></div>
+    <a href="login.html" class="btn btn-ghost">Login</a>
+    <a href="login.html" class="btn btn-primary">Get Started Free</a>
+  </div>
+
+  <!-- ==========================================
+       HERO SECTION
+  ========================================== -->
+  <section class="hero">
+    <div class="hero-bg-gradient"></div>
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-text">
+          <div class="hero-badge">
+            <span class="badge">🚀 Now Live — Meta Approved API</span>
+          </div>
+
+          <h1 class="hero-headline">
+            Turn Instagram Comments into
+            <span class="gradient-text">DM Conversations</span>
+            — Automatically
+          </h1>
+
+          <p class="hero-sub">
+            Connect your Instagram, set a keyword trigger, and Comment2DM sends personalized DMs to every commenter. Grow faster, engage smarter.
+          </p>
+
+          <div class="hero-ctas">
+            <a href="login.html" class="btn btn-primary">
+              🚀 Start Free — No Credit Card
+            </a>
+            <a href="#how-it-works" class="btn btn-ghost">
+              ▶ See How It Works
+            </a>
+          </div>
+
+          <div class="trust-badges">
+            <span class="trust-badge"><span class="icon">🔒</span> Meta Approved</span>
+            <span class="trust-badge"><span class="icon">⚡</span> Under 2 seconds</span>
+            <span class="trust-badge"><span class="icon">🛡️</span> No password required</span>
+            <span class="trust-badge"><span class="icon">📊</span> Real-time analytics</span>
           </div>
         </div>
-        <div class="bubble in">dropped "LINK" — can you send it over? 👀</div>
-        <div class="bubble action">✓ Auto-detected keyword: LINK</div>
-        <div class="bubble out">Hey! Here's your early-access link — 20% off today only 💌</div>
-        <div class="typing-tag"><span class="dot"></span>Replied in 4 seconds, while you were live</div>
+
+        <!-- iPhone Mockup -->
+        <div class="hero-visual">
+          <div style="position:relative;">
+            <div class="iphone">
+              <div class="iphone-notch"></div>
+              <div class="iphone-screen">
+                <!-- IG-style header -->
+                <div class="ig-header">
+                  <div class="ig-avatar-sm"></div>
+                  <div>
+                    <div class="ig-username-sm">fitnessguru_india</div>
+                    <div class="ig-handle-sm">Reel • 2h ago</div>
+                  </div>
+                </div>
+
+                <!-- Reel thumbnail -->
+                <div class="ig-reel-thumb">
+                  <span>Fitness Reel</span>
+                  <span class="ig-reel-text">Comment "LINK" for free plan</span>
+                </div>
+
+                <!-- Action icons -->
+                <div class="ig-actions">
+                  <span>🤍</span><span>💬</span><span>➦</span>
+                </div>
+
+                <!-- Comments -->
+                <div class="ig-comments-section">
+                  <div class="ig-comment">
+                    <div class="ig-comment-avatar"></div>
+                    <div class="ig-comment-text">
+                      <span class="ig-comment-user">raj_fitness </span>
+                      <span class="ig-comment-msg">bro this is fire 🔥 </span>
+                      <span class="ig-comment-keyword">LINK</span>
+                    </div>
+                  </div>
+                  <div class="ig-comment">
+                    <div class="ig-comment-avatar orange"></div>
+                    <div class="ig-comment-text">
+                      <span class="ig-comment-user">priya_wellness </span>
+                      <span class="ig-comment-msg">send me the </span>
+                      <span class="ig-comment-keyword">LINK</span>
+                      <span class="ig-comment-msg"> plz 🙏</span>
+                    </div>
+                  </div>
+                  <div class="ig-comment">
+                    <div class="ig-comment-avatar green"></div>
+                    <div class="ig-comment-text">
+                      <span class="ig-comment-user">arjun_runs </span>
+                      <span class="ig-comment-msg">amazing content! </span>
+                      <span class="ig-comment-keyword">LINK</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- DM being sent -->
+                <div class="ig-dm-bubble">
+                  <div class="ig-dm-label">⚡ Comment2DM sent DM</div>
+                  Hey raj_fitness! Here's your exclusive link → bit.ly/fitness-plan 🎯 Comment2DM delivered!
+                </div>
+              </div>
+            </div>
+            <div class="iphone-glow"></div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="stat-strip">
-  <div class="wrap">
-    <div class="stat"><b>Official</b><span>Meta API integration</span></div>
-    <div class="stat"><b>No scraping</b><span>Official authorization flow</span></div>
-    <div class="stat"><b>Secure</b><span>Encrypted integration tokens</span></div>
-    <div class="stat"><b>HTTPS</b><span>Secure production connection</span></div>
-  </div>
-</section>
-
-<section class="section" id="how-it-works">
-  <div class="wrap">
-    <div class="section-head">
-      <h2>From post to paid, in three steps</h2>
-      <p>No flowcharts, no developer. Set the trigger, write the reply, switch it on.</p>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <h3>Pick a trigger</h3>
-        <p>A keyword in a comment, a story reply, or the first DM from someone new — choose what should start the conversation.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <h3>Write the reply</h3>
-        <p>Draft the message, attach a link or offer, and branch it into follow-ups — all from a visual editor, no code required.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <h3>Go live</h3>
-        <p>Flip it on and Nudge takes over, replying instantly and consistently, whether you're asleep, filming, or off the grid.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" style="background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
-  <div class="wrap">
-    <div class="section-head">
-      <p class="eyebrow">Designed for creators</p>
-      <h2>Automate repetitive Instagram conversations</h2>
-      <p>Use official Meta APIs to turn approved triggers into consistent replies while keeping control of your account.</p>
-    </div>
-    <div class="steps">
-      <div class="step"><div class="step-num">01</div><h3>Official authorization</h3><p>Connect an eligible Instagram account through Meta's authorization flow instead of sharing your Instagram password.</p></div>
-      <div class="step"><div class="step-num">02</div><h3>Clear triggers</h3><p>Configure keywords and reply text for the automations you choose to enable.</p></div>
-      <div class="step"><div class="step-num">03</div><h3>Account control</h3><p>Review, change or disconnect integrations from Nudge. Platform permissions and limits remain controlled by Meta.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="pricing">
-  <div class="wrap">
-    <div class="section-head">
-      <h2>Start free. Upgrade once it pays for itself</h2>
-      <p>Every plan is designed to use Instagram's official APIs. Availability and platform enforcement remain controlled by Meta.</p>
-    </div>
-
-    <div class="pricing-toggle" id="pricingToggle">
-      <button class="active" data-cycle="monthly">Monthly</button>
-      <button data-cycle="annual">Annual <span class="save">— save 17–20%</span></button>
-    </div>
-
-    <div class="pricing-grid">
-
-      <div class="plan">
-        <div class="plan-name">Free</div>
-        <div class="plan-price">₹0<span>/mo</span></div>
-        <p class="plan-desc">To try Nudge on one account before you commit to anything.</p>
-        <a href="login.html?tab=signup&plan=free" class="btn btn-ghost btn-block">Start free</a>
-        <ul class="plan-features">
-          <li><span class="check">✓</span><span><b>300/mo</b> DMs sent</span></li>
-          <li><span class="check">✓</span><span><b>1</b> Instagram account</span></li>
-          <li><span class="check">✓</span>Comment auto-reply</li>
-          <li><span class="check">✓</span><span><b>2</b> story automations</span></li>
-          <li><span class="check">✓</span><span><b>3</b> message templates</span></li>
-          <li><span class="check">✓</span>Basic keyword triggers</li>
-          <li><span class="check">✓</span><span><b>50/mo</b> ask-for-follow</span></li>
-          <li><span class="check">✓</span><span><b>50/mo</b> lead capture</span></li>
-          <li><span class="check">✓</span><span><b>5/mo</b> scheduled posts & Reels</span></li>
-          <li><span class="check">✓</span><span><b>3</b> conversation starters</span></li>
-          <li><span class="check">✓</span><span><b>5</b> links in bio</span></li>
-        </ul>
+  <!-- ==========================================
+       FEATURES SECTION
+  ========================================== -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Features</div>
+        <h2 class="section-title">Everything You Need to <span class="gradient-text">Automate</span></h2>
+        <p class="section-subtitle">Powerful tools designed to turn every Instagram comment into a business opportunity.</p>
       </div>
 
-      <div class="plan popular">
-        <div class="plan-tag">Most popular</div>
-        <div class="plan-name">Creator</div>
-        <div class="plan-price price-monthly">₹299<span>/mo</span></div>
-        <div class="plan-price price-annual" style="display:none;">₹249<span>/mo, billed yearly</span></div>
-        <p class="plan-desc">For creators ready to hand off their DMs for good.</p>
-        <a href="billing.html?plan=creator&billing=monthly" data-plan-button="creator" class="btn btn-accent btn-block">Get Creator</a>
-        <ul class="plan-features">
-          <li><span class="check">✓</span>5,000 DMs/mo</li>
-          <li><span class="check">✓</span><span><b>2,000/mo</b> AI credits</span></li>
-          <li><span class="check">✓</span>AI comment replies + spam protection</li>
-          <li><span class="check">✓</span>Viral-post protection</li>
-          <li><span class="check">✓</span><span><b>2</b> Instagram accounts</span></li>
-          <li><span class="check">✓</span>Story automation, 6 replies</li>
-          <li><span class="check">✓</span>Unlimited templates & triggers</li>
-          <li><span class="check">✓</span>Unlimited ask-for-follow & lead capture</li>
-          <li><span class="check">✓</span>Analytics dashboard & contact management</li>
-          <li><span class="check">✓</span>WhatsApp / email redirect</li>
-          <li><span class="check">✓</span>Priority support</li>
-        </ul>
-      </div>
-
-      <div class="plan">
-        <div class="plan-name">Growth</div>
-        <div class="plan-price price-monthly">₹699<span>/mo</span></div>
-        <div class="plan-price price-annual" style="display:none;">₹579<span>/mo, billed yearly</span></div>
-        <p class="plan-desc">More accounts and headroom as your audience scales.</p>
-        <a href="billing.html?plan=growth&billing=monthly" data-plan-button="growth" class="btn btn-ghost btn-block">Get Growth</a>
-        <ul class="plan-features">
-          <li><span class="check">✓</span>Everything in Creator</li>
-          <li><span class="check">✓</span><span><b>10,000/mo</b> AI credits</span></li>
-          <li><span class="check">✓</span><span><b>5</b> Instagram accounts</span></li>
-          <li><span class="check">✓</span>Rewind & trial Reels</li>
-          <li><span class="check">✓</span>Priority support</li>
-        </ul>
-      </div>
-
-      <div class="plan">
-        <div class="plan-name">Scale</div>
-        <div class="plan-price price-monthly">₹1,499<span>/mo</span></div>
-        <div class="plan-price price-annual" style="display:none;">₹1,199<span>/mo, billed yearly</span></div>
-        <p class="plan-desc">For agencies running several creator accounts at once.</p>
-        <a href="billing.html?plan=scale&billing=monthly" data-plan-button="scale" class="btn btn-ghost btn-block">Get Scale</a>
-        <ul class="plan-features">
-          <li><span class="check">✓</span>Everything in Growth</li>
-          <li><span class="check">✓</span><span><b>30,000/mo</b> AI credits</span></li>
-          <li><span class="check">✓</span><span><b>15</b> Instagram accounts</span></li>
-          <li><span class="check">✓</span>Rewind & trial Reels</li>
-          <li><span class="check">✓</span>Priority support</li>
-        </ul>
-      </div>
-
-      <div class="plan">
-        <div class="plan-name">Custom</div>
-        <div class="plan-price" style="font-size:1.4rem;">Let's talk</div>
-        <p class="plan-desc">For agencies and large teams managing many creators.</p>
-        <a href="#contact" class="btn btn-ghost btn-block">Contact sales</a>
-        <ul class="plan-features">
-          <li><span class="check">✓</span>Everything in Scale</li>
-          <li><span class="check">✓</span>Unlimited AI credits</li>
-          <li><span class="check">✓</span>Up to <b>100</b> Instagram accounts</li>
-          <li><span class="check">✓</span>Custom DM send limits</li>
-          <li><span class="check">✓</span>Dedicated support</li>
-        </ul>
-      </div>
-
-    </div>
-    <p class="pricing-note">Nudge is designed to use Meta's official APIs and OAuth. Third-party platform rules and availability apply.</p>
-  </div>
-</section>
-
-<section class="section" id="faq">
-  <div class="wrap">
-    <div class="section-head">
-      <h2>Questions, answered</h2>
-    </div>
-    <div class="faq">
-      <div class="faq-item">
-        <button class="faq-q">Is Instagram DM automation actually allowed?<span class="plus">+</span></button>
-        <div class="faq-a"><p>Nudge is designed around Instagram's official APIs and OAuth authorization. Feature availability depends on the permissions and policies applicable to your account.</p></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q">Can automating my DMs get my account banned?<span class="plus">+</span></button>
-        <div class="faq-a"><p>Using official APIs does not guarantee that an Instagram account will never be restricted. You remain responsible for following Instagram and Meta policies, and third-party enforcement can change.</p></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q">How long does setup actually take?<span class="plus">+</span></button>
-        <div class="faq-a"><p>Connect your account, choose a trigger — a comment, a story reply, or a DM keyword — and write the reply once. Most people are live in under two minutes.</p></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q">Is there a genuinely free plan?<span class="plus">+</span></button>
-        <div class="faq-a"><p>Yes — 300 DMs a month, comment auto-reply and story automation, free forever, no card required. Upgrade only once it's clearly paying for itself.</p></div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q">Can Nudge message everyone who follows me?<span class="plus">+</span></button>
-        <div class="faq-a"><p>Automatic welcomes for new followers are on the roadmap. Today, the welcome-DM automation greets every new contact the first time they message you, so first impressions are never missed.</p></div>
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <span class="feature-icon">⚡</span>
+          <div class="feature-title">Instant DM Automation</div>
+          <p class="feature-desc">Send personalized DMs the moment someone comments. No delays, no missed leads.</p>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-icon">🎯</span>
+          <div class="feature-title">Smart Keyword Triggers</div>
+          <p class="feature-desc">Only reply to comments with specific keywords. Target exactly the audience you want.</p>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-icon">📸</span>
+          <div class="feature-title">Multi-Account Support</div>
+          <p class="feature-desc">Manage up to 10 Instagram accounts from a single dashboard.</p>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-icon">🤖</span>
+          <div class="feature-title">AI-Powered Messages</div>
+          <p class="feature-desc">Let Creator Studio AI write your DM scripts. Powered by GPT and Gemini.</p>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-icon">📊</span>
+          <div class="feature-title">Deep Analytics</div>
+          <p class="feature-desc">Track every comment, DM, and engagement rate. Know what's working.</p>
+        </div>
+        <div class="feature-card reveal">
+          <span class="feature-icon">🔒</span>
+          <div class="feature-title">Instagram Safe</div>
+          <p class="feature-desc">Built on Meta's official API. Your account is safe and compliant.</p>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="section" style="padding-top:0;">
-  <div class="wrap">
-    <div class="cta-band">
-      <div>
-        <h2>Your next sale is already sitting in your DMs.</h2>
-        <p>Create an account and explore the available features. Free-plan limits and feature availability are shown in the product.</p>
+  <!-- ==========================================
+       HOW IT WORKS SECTION
+  ========================================== -->
+  <section class="hiw-section" id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">How it works</div>
+        <h2 class="section-title">Up and Running in <span class="gradient-text">5 Minutes</span></h2>
+        <p class="section-subtitle">Three simple steps to automate your Instagram DMs and grow your audience on autopilot.</p>
       </div>
-      <a href="login.html?tab=signup" class="btn btn-accent">Start free</a>
-    </div>
-  </div>
-</section>
 
-<footer class="site-footer" id="contact">
-  <div class="wrap">
-    <div class="footer-grid">
-      <div class="footer-col">
-        <a href="index.html" class="logo"><span class="logo-mark"></span>Nudge</a>
-        <p style="margin-top:14px; color:var(--ink-soft); font-size:0.9rem; max-width:32ch;">Instagram automation for creators who'd rather be making the next post.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Product</h4>
-        <ul>
-          <li><a href="#how-it-works">How it works</a></li>
-          <li><a href="#pricing">Pricing</a></li>
-          <li><a href="#faq">FAQ</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Company</h4>
-        <ul>
-          <li><a href="contact.html">Contact & support</a></li>
-          <li><a href="help.html">Help center</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Legal & payments</h4>
-        <ul>
-          <li><a href="terms.html">Terms of service</a></li>
-          <li><a href="privacy.html">Privacy policy</a></li>
-          <li><a href="refund.html">Refund & cancellation policy</a></li>
-          <li><a href="contact.html">Contact & grievance</a></li>
-          <li><a href="https://razorpay.com/terms/" target="_blank" rel="noopener">Razorpay payment terms</a></li>
-        </ul>
+      <div class="hiw-steps">
+        <div class="hiw-step reveal">
+          <div class="hiw-step-number">🔗</div>
+          <h3 class="hiw-step-title">Connect Instagram</h3>
+          <p class="hiw-step-desc">Link your Business or Creator account securely via Meta OAuth. No password needed.</p>
+        </div>
+        <div class="hiw-step reveal">
+          <div class="hiw-step-number">⚡</div>
+          <h3 class="hiw-step-title">Create Automation</h3>
+          <p class="hiw-step-desc">Set your trigger keywords, write your DM message, and choose which reels to watch.</p>
+        </div>
+        <div class="hiw-step reveal">
+          <div class="hiw-step-number">📬</div>
+          <h3 class="hiw-step-title">Watch It Work</h3>
+          <p class="hiw-step-desc">Comment2DM sends DMs automatically and tracks every interaction in real time.</p>
+        </div>
       </div>
     </div>
-    <div class="footer-bottom">
-      <span>© 2026 Nudge. All rights reserved.</span>
-      <span>Uses official Meta APIs</span>
-    </div>
-  </div>
-</footer>
+  </section>
 
-<script src="script.js"></script>
-<script src="analytics.js"></script>
+  <!-- ==========================================
+       TESTIMONIALS SECTION
+  ========================================== -->
+  <section class="testimonials-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Social Proof</div>
+        <h2 class="section-title">Loved by <span class="gradient-text">Creators</span></h2>
+        <p class="section-subtitle">Join thousands of Instagram creators who've automated their DMs with Comment2DM.</p>
+      </div>
+
+      <div class="testimonials-grid">
+        <div class="testimonial-card reveal">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"I went from manually copying 100 DMs a day to having it fully automated. My lead conversion went up 3x in the first week."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar violet">F</div>
+            <div>
+              <div class="author-name">Fitness Guru</div>
+              <div class="author-handle">@fitnessguru_india</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"The setup took 5 minutes. Now every person who comments 'link' on my reels gets the product URL in their DM instantly."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar teal">T</div>
+            <div>
+              <div class="author-name">Tech Review Raj</div>
+              <div class="author-handle">@techreview_raj</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal">
+          <div class="stars">★★★★★</div>
+          <p class="testimonial-text">"Finally a tool that feels safe and professional. My Instagram engagement has never been higher."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar rose">P</div>
+            <div>
+              <div class="author-name">Priya's Style</div>
+              <div class="author-handle">@stylish.priya</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       PRICING PREVIEW SECTION
+  ========================================== -->
+  <section class="pricing-section" id="pricing">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Pricing</div>
+        <h2 class="section-title">Simple, <span class="gradient-text">Transparent</span> Pricing</h2>
+        <p class="section-subtitle">Start free, upgrade when you're ready. No hidden fees.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <div class="pricing-card reveal">
+          <div class="pricing-plan">Free</div>
+          <div class="pricing-price">₹0 <span>/ month</span></div>
+          <div class="pricing-desc">For creators just getting started</div>
+          <a href="login.html" class="btn btn-ghost pricing-cta">Get Started</a>
+        </div>
+        <div class="pricing-card popular reveal">
+          <div class="pricing-plan">Pro</div>
+          <div class="pricing-price">₹999 <span>/ month</span></div>
+          <div class="pricing-desc">For growing creators & small businesses</div>
+          <a href="login.html" class="btn btn-primary pricing-cta">Start Pro</a>
+        </div>
+        <div class="pricing-card reveal">
+          <div class="pricing-plan">Elite</div>
+          <div class="pricing-price">₹2,499 <span>/ month</span></div>
+          <div class="pricing-desc">For agencies & power users</div>
+          <a href="login.html" class="btn btn-ghost pricing-cta">Go Elite</a>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top: 40px;">
+        <a href="pricing.html" class="btn btn-outline">View Full Pricing Details →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       CTA BANNER
+  ========================================== -->
+  <section class="cta-banner">
+    <div class="container">
+      <h2>Ready to automate your <span class="gradient-text">Instagram DMs</span>?</h2>
+      <p>Join thousands of creators using Comment2DM to grow their audience.</p>
+      <a href="login.html" class="btn btn-primary" style="font-size:16px; padding:16px 36px;">
+        🚀 Get Started for Free
+      </a>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       FOOTER
+  ========================================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#" class="logo">⚡ Comment<span class="accent" style="background:linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">2</span>DM</a>
+          <p class="tagline">Automating Instagram DMs for creators worldwide</p>
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-col-title">Product</div>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#how-it-works">How it Works</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-col-title">Support</div>
+          <ul>
+            <li><a href="#">Help Desk</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><a href="#">Status</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-col-title">Legal</div>
+          <ul>
+            <li><a href="#">Privacy</a></li>
+            <li><a href="#">Terms</a></li>
+            <li><a href="#">Refund</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-col-title">Company</div>
+          <ul>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Twitter</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2024 Comment2DM. All rights reserved.</span>
+        <span>Made with ❤️ in India</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       JAVASCRIPT
+  ========================================== -->
+  <script>
+    // Particle background
+    (function () {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 15; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const drift = (Math.random() - 0.5) * 200;
+        p.style.cssText = `
+          left: ${Math.random() * 100}%;
+          width: ${Math.random() * 3 + 2}px;
+          height: ${Math.random() * 3 + 2}px;
+          animation-duration: ${Math.random() * 15 + 10}s;
+          animation-delay: ${Math.random() * 10}s;
+          --drift: ${drift}px;
+          background: ${i % 3 === 0 ? '#6366f1' : i % 3 === 1 ? '#8b5cf6' : '#ec4899'};
+        `;
+        container.appendChild(p);
+      }
+    })();
+
+    // Sticky nav on scroll
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    // Hamburger / mobile menu
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    hamburger.addEventListener('click', () => {
+      const open = mobileMenu.classList.toggle('open');
+      hamburger.classList.toggle('open', open);
+      hamburger.setAttribute('aria-expanded', open);
+    });
+
+    // Close mobile menu on link click
+    document.querySelectorAll('.mobile-link').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        hamburger.classList.remove('open');
+      });
+    });
+
+    // Scroll reveal with IntersectionObserver
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 80);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+  </script>
 </body>
 </html>

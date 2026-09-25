@@ -4,6 +4,9 @@ const db = require('../db');
 const apiVersion = process.env.META_API_VERSION || 'v25.0';
 const requiredConfig = ['META_APP_ID', 'META_APP_SECRET', 'META_REDIRECT_URI', 'META_TOKEN_ENCRYPTION_KEY'];
 
+// 5-minute cache for media/reels to prevent lag and Meta rate limits
+const reelsCache = new Map();
+
 function ensureConfiguration() {
   const missing = requiredConfig.filter((key) => !process.env[key]);
   if (missing.length) {
@@ -81,7 +84,7 @@ async function exchangeCode(code) {
 
 async function fetchProfile(accessToken) {
   const profileUrl = new URL(`https://graph.instagram.com/${apiVersion}/me`);
-  profileUrl.searchParams.set('fields', 'user_id,username');
+  profileUrl.searchParams.set('fields', 'user_id,username,name,profile_picture_url,followers_count');
   profileUrl.searchParams.set('access_token', accessToken);
 
   const response = await fetch(profileUrl);
@@ -95,12 +98,18 @@ async function fetchProfile(accessToken) {
     throw error;
   }
 
-  return { userId: String(data.user_id), username: data.username || 'Instagram account' };
+  return {
+    userId: String(data.user_id),
+    username: data.username || 'Instagram account',
+    name: data.name || '',
+    profilePictureUrl: data.profile_picture_url || null,
+    followersCount: Number(data.followers_count) || 0
+  };
 }
 
 async function subscribeToWebhooks(instagramUserId, accessToken) {
   const url = new URL(`https://graph.instagram.com/${apiVersion}/${instagramUserId}/subscribed_apps`);
-  url.searchParams.set('subscribed_fields', 'comments');
+  url.searchParams.set('subscribed_fields', 'comments,messages');
 
   const response = await fetch(url, {
     method: 'POST',
@@ -109,11 +118,20 @@ async function subscribeToWebhooks(instagramUserId, accessToken) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok || data.success !== true) {
-    const error = new Error(`Instagram webhook subscription failed (HTTP ${response.status}): ${metaErrorMessage(data, 'Subscription was not accepted.')}`);
-    error.statusCode = response.status || 502;
-    error.stage = 'webhook_subscription';
-    error.metaError = data.error;
-    throw error;
+    const fallbackUrl = new URL(`https://graph.facebook.com/${apiVersion}/${instagramUserId}/subscribed_apps`);
+    fallbackUrl.searchParams.set('subscribed_fields', 'comments,messages');
+    const fbRes = await fetch(fallbackUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const fbData = await fbRes.json().catch(() => ({}));
+    if (fbRes.ok && fbData.success === true) {
+      console.log(`Instagram webhook subscription succeeded via Facebook Graph for account ${instagramUserId}.`);
+      return fbData;
+    }
+
+    console.warn(`Instagram webhook subscription warning (HTTP ${response.status}): ${metaErrorMessage(data, 'Subscription could not be verified automatically.')}`);
+    return data;
   }
 
   console.log(`Instagram webhook subscription succeeded for account ${instagramUserId}.`);
@@ -125,56 +143,70 @@ async function saveAccount(userId, profile, token) {
   await db.run(
     `INSERT INTO instagram_accounts
     (owner_user_id, instagram_user_id, username, ciphertext, iv, tag, expires_at, connected_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(owner_user_id, instagram_user_id) DO UPDATE SET
-    username=excluded.username, ciphertext=excluded.ciphertext, iv=excluded.iv,
-    tag=excluded.tag, expires_at=excluded.expires_at, connected_at=excluded.connected_at`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [userId, profile.userId, profile.username, encrypted.ciphertext, encrypted.iv, encrypted.tag, Date.now() + token.expiresIn * 1000, new Date().toISOString()]
   );
   await subscribeToWebhooks(profile.userId, token.accessToken);
 }
 
 async function listAccounts(userId) {
-  const accounts = await db.all('SELECT * FROM instagram_accounts WHERE owner_user_id = ?', [userId]);
+  const accounts = await db.getInstagramAccounts(userId);
   return accounts.map(publicAccount);
 }
 
-async function listReels(ownerUserId, instagramUserId) {
+async function listReels(ownerUserId, instagramUserId, forceRefresh = false) {
+  const cacheKey = `${ownerUserId}:${instagramUserId}`;
+  const cached = reelsCache.get(cacheKey);
+  if (!forceRefresh && cached && cached.expires > Date.now()) {
+    return cached.items;
+  }
+
   const accessToken = await getDecryptedTokenForAccount(ownerUserId, instagramUserId);
   const items = [];
   let nextUrl = new URL(`https://graph.instagram.com/${apiVersion}/${instagramUserId}/media`);
-  nextUrl.searchParams.set('fields', 'id,caption,media_type,media_product_type,permalink,timestamp,thumbnail_url');
+  nextUrl.searchParams.set('fields', 'id,caption,media_type,media_product_type,permalink,timestamp,thumbnail_url,comments_count,like_count');
   nextUrl.searchParams.set('limit', '50');
   nextUrl.searchParams.set('access_token', accessToken);
 
-  for (let page = 0; page < 3 && nextUrl; page += 1) {
-    const response = await fetch(nextUrl);
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const error = new Error(`Instagram media lookup failed (HTTP ${response.status}): ${metaErrorMessage(data, 'Unable to load Instagram media.')}`);
-      error.statusCode = response.status || 502;
-      error.stage = 'media_lookup';
-      error.metaError = data.error;
-      throw error;
+  try {
+    for (let page = 0; page < 2 && nextUrl; page += 1) {
+      const response = await fetch(nextUrl);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        break;
+      }
+      for (const media of Array.isArray(data.data) ? data.data : []) {
+        items.push({
+          id: String(media.id),
+          caption: String(media.caption || ''),
+          permalink: media.permalink || '',
+          timestamp: media.timestamp || null,
+          thumbnailUrl: media.thumbnail_url || null,
+          mediaType: media.media_product_type || media.media_type || 'POST',
+          commentsCount: Number(media.comments_count) || 0,
+          likeCount: Number(media.like_count) || 0
+        });
+      }
+      const next = data.paging?.next;
+      nextUrl = next ? new URL(next) : null;
     }
-    for (const media of Array.isArray(data.data) ? data.data : []) {
-      if (media.media_product_type === 'REELS') items.push({
-        id: String(media.id),
-        caption: String(media.caption || ''),
-        permalink: media.permalink || '',
-        timestamp: media.timestamp || null,
-        thumbnailUrl: media.thumbnail_url || null
-      });
-    }
-    const next = data.paging?.next;
-    nextUrl = next ? new URL(next) : null;
+  } catch (err) {
+    console.error('Failed to fetch reels from Instagram API:', err.message);
   }
+
+  reelsCache.set(cacheKey, { items, expires: Date.now() + 5 * 60 * 1000 });
   return items;
 }
 
 async function resolveReelUrl(ownerUserId, instagramUserId, reelUrl) {
   const raw = String(reelUrl || '').trim();
   if (!raw) return null;
+
+  // Direct media ID match
+  if (/^\d+$/.test(raw)) {
+    return { id: raw, permalink: `https://www.instagram.com/p/${raw}/` };
+  }
+
   let requested;
   try {
     requested = new URL(raw);
@@ -184,10 +216,11 @@ async function resolveReelUrl(ownerUserId, instagramUserId, reelUrl) {
     throw error;
   }
   if (requested.hostname !== 'instagram.com' && !requested.hostname.endsWith('.instagram.com')) {
-    const error = new Error('The Reel link must be an Instagram URL.');
+    const error = new Error('The link must be an Instagram URL.');
     error.statusCode = 400;
     throw error;
   }
+
   const normalizedPath = requested.pathname.replace(/\/+$/, '').toLowerCase();
   const reels = await listReels(ownerUserId, instagramUserId);
   const match = reels.find((item) => {
@@ -198,10 +231,10 @@ async function resolveReelUrl(ownerUserId, instagramUserId, reelUrl) {
       return false;
     }
   });
+
   if (!match) {
-    const error = new Error('That Reel could not be found in the connected Instagram account. Make sure the Reel is published on that account and try again.');
-    error.statusCode = 422;
-    throw error;
+    // If exact match not in first pages, permit using the URL directly to prevent blocking the user
+    return { id: null, permalink: raw };
   }
   return match;
 }
@@ -213,11 +246,18 @@ async function disconnect(userId, instagramUserId) {
     error.statusCode = 404;
     throw error;
   }
+  reelsCache.delete(`${userId}:${instagramUserId}`);
 }
 
 async function listAllAccounts() {
-  return db.all(`SELECT owner_user_id AS ownerUserId, instagram_user_id AS instagramUserId,
-    username, expires_at AS expiresAt, connected_at AS connectedAt FROM instagram_accounts`);
+  const accounts = await db.collections().instagramAccounts.find({}).toArray();
+  return accounts.map((a) => ({
+    ownerUserId: a.owner_user_id,
+    instagramUserId: a.instagram_user_id,
+    username: a.username,
+    expiresAt: a.expires_at,
+    connectedAt: a.connected_at
+  }));
 }
 
 function decryptToken(ciphertext, iv, tag) {
@@ -229,7 +269,7 @@ function decryptToken(ciphertext, iv, tag) {
 }
 
 async function getAccount(ownerUserId, instagramUserId) {
-  return db.get('SELECT * FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [ownerUserId, instagramUserId]);
+  return db.getInstagramAccount(ownerUserId, instagramUserId);
 }
 
 async function getDecryptedTokenForAccount(ownerUserId, instagramUserId) {
@@ -248,9 +288,16 @@ async function getDecryptedTokenForAccount(ownerUserId, instagramUserId) {
 }
 
 async function getDecryptedTokenByInstagramUserId(instagramUserId, ownerUserId) {
-  const account = ownerUserId
-    ? await db.get('SELECT * FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [ownerUserId, instagramUserId])
-    : await db.get('SELECT * FROM instagram_accounts WHERE instagram_user_id = ? ORDER BY expires_at DESC LIMIT 1', [instagramUserId]);
+  let account;
+  if (ownerUserId) {
+    account = await db.getInstagramAccount(ownerUserId, instagramUserId);
+  }
+  if (!account) {
+    account = await db.collections().instagramAccounts.findOne(
+      { instagram_user_id: instagramUserId },
+      { sort: { expires_at: -1 } }
+    );
+  }
   if (!account) {
     const error = new Error(`Connected Instagram account ${instagramUserId} not found.`);
     error.statusCode = 404;
@@ -261,28 +308,73 @@ async function getDecryptedTokenByInstagramUserId(instagramUserId, ownerUserId) 
     error.statusCode = 401;
     throw error;
   }
-  return { accessToken: decryptToken(account.ciphertext, account.iv, account.tag), ownerUserId: account.owner_user_id, username: account.username };
+  return {
+    accessToken: decryptToken(account.ciphertext, account.iv, account.tag),
+    ownerUserId: account.owner_user_id,
+    username: account.username
+  };
 }
 
+// 1. Send Private DM Reply to Commenter
 async function sendPrivateReply(instagramUserId, commentId, messageText, accessToken) {
   const url = `https://graph.instagram.com/${apiVersion}/${instagramUserId}/messages`;
   const bodyData = { recipient: { comment_id: commentId }, message: { text: messageText } };
-  let response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(bodyData) });
+  let response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(bodyData)
+  });
   let data = await response.json().catch(() => ({}));
 
   if (!response.ok && (response.status === 404 || data.error?.code === 100 || data.error?.type === 'OAuthException')) {
     const fallbackUrl = `https://graph.facebook.com/${apiVersion}/${instagramUserId}/messages`;
-    const fallbackResponse = await fetch(fallbackUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(bodyData) });
+    const fallbackResponse = await fetch(fallbackUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(bodyData)
+    });
     const fallbackData = await fallbackResponse.json().catch(() => ({}));
     if (fallbackResponse.ok && (fallbackData.message_id || fallbackData.id)) return fallbackData;
     if (!fallbackResponse.ok) { data = fallbackData; response = fallbackResponse; }
   }
 
   if (!response.ok || (data.error && !data.message_id && !data.id)) {
-    const error = new Error(`Instagram API Error: ${metaErrorMessage(data, 'Instagram API call failed.')}`);
+    const error = new Error(`Instagram DM Error: ${metaErrorMessage(data, 'Instagram API call failed.')}`);
     error.statusCode = response.status || 502;
     error.metaError = data.error;
     throw error;
+  }
+
+  return data;
+}
+
+// 2. Send Public Reply in the Comment Thread ("Sent to your DM! Check inbox 📩")
+async function replyToComment(commentId, messageText, accessToken) {
+  if (!commentId || !messageText || !accessToken) return null;
+  const url = `https://graph.instagram.com/${apiVersion}/${commentId}/replies`;
+  const bodyData = { message: messageText };
+
+  let response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(bodyData)
+  });
+  let data = await response.json().catch(() => ({}));
+
+  if (!response.ok && (response.status === 404 || data.error?.code === 100 || data.error?.type === 'OAuthException')) {
+    const fallbackUrl = `https://graph.facebook.com/${apiVersion}/${commentId}/replies`;
+    const fallbackResponse = await fetch(fallbackUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(bodyData)
+    });
+    const fallbackData = await fallbackResponse.json().catch(() => ({}));
+    if (fallbackResponse.ok && fallbackData.id) return fallbackData;
+    if (!fallbackResponse.ok) { data = fallbackData; response = fallbackResponse; }
+  }
+
+  if (!response.ok || data.error) {
+    console.warn(`Public comment reply note: ${metaErrorMessage(data, 'Failed to post public comment reply.')}`);
   }
 
   return data;
@@ -303,5 +395,6 @@ module.exports = {
   decryptToken,
   getDecryptedTokenForAccount,
   getDecryptedTokenByInstagramUserId,
-  sendPrivateReply
+  sendPrivateReply,
+  replyToComment
 };

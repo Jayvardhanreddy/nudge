@@ -1,19 +1,207 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Help Desk - Nudge</title><link rel="stylesheet" href="styles.css"></head><body class="app-body" data-page="help"><div class="app-shell"><aside class="app-sidebar" id="appSidebar"><div class="sidebar-top"><a href="index.html" class="logo" aria-label="Nudge home"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose">×</button></div><nav class="app-nav"><a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a><a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a><a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a><a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a><a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a><a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">$</span>Creator Toolkit</a><a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a><a href="pricing.html" data-nav="pricing"><span class="nav-icon">₹</span>Pricing</a><a href="help.html" data-nav="help"><span class="nav-icon">?</span>Help Desk</a></nav><div class="sidebar-foot"><p>Need help? Start here.</p><a href="index.html">Back to website</a></div></aside><div class="app-main"><header class="app-header">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Help Desk — Comment2DM</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .help-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px; }
+    @media(max-width:900px){ .help-grid{grid-template-columns:1fr;} }
+    .glass-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:24px; }
+    /* FAQ */
+    .faq-item { border-bottom:1px solid rgba(255,255,255,0.06); }
+    .faq-item:last-child { border-bottom:none; }
+    .faq-question { display:flex; align-items:center; justify-content:space-between; padding:16px 0; cursor:pointer; gap:10px; }
+    .faq-question span { font-size:0.9rem; font-weight:500; color:#e2e8f0; line-height:1.4; }
+    .faq-arrow { color:rgba(255,255,255,0.35); font-size:0.9rem; transition:transform 0.3s; flex-shrink:0; }
+    .faq-item.open .faq-arrow { transform:rotate(180deg); }
+    .faq-answer { max-height:0; overflow:hidden; transition:max-height 0.3s ease; }
+    .faq-item.open .faq-answer { max-height:200px; }
+    .faq-answer p { color:rgba(255,255,255,0.5); font-size:0.85rem; line-height:1.6; padding-bottom:14px; }
+    /* Chat */
+    .chat-card { display:flex; flex-direction:column; height:560px; padding:0; overflow:hidden; }
+    .chat-header { display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0; }
+    .chat-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#ec4899); display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+    .online-dot { width:8px; height:8px; background:#10b981; border-radius:50%; }
+    .chat-messages { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
+    .chat-messages::-webkit-scrollbar { width:4px; }
+    .chat-messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+    .chat-bubble { max-width:78%; padding:10px 14px; border-radius:14px; font-size:0.86rem; line-height:1.5; }
+    .chat-bubble.bot { background:rgba(255,255,255,0.06); color:#e2e8f0; align-self:flex-start; border-bottom-left-radius:4px; }
+    .chat-bubble.user { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+    .chat-time { font-size:0.68rem; color:rgba(255,255,255,0.25); margin-top:3px; }
+    .chat-time.right { text-align:right; }
+    .typing-dots { display:flex; gap:4px; align-items:center; padding:12px 16px; background:rgba(255,255,255,0.06); border-radius:14px; border-bottom-left-radius:4px; align-self:flex-start; }
+    .typing-dots span { width:6px; height:6px; background:rgba(255,255,255,0.4); border-radius:50%; animation:bounce 1.2s infinite; }
+    .typing-dots span:nth-child(2) { animation-delay:0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay:0.4s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0);} 30%{transform:translateY(-5px);} }
+    .chat-quick-replies { display:flex; gap:8px; flex-wrap:wrap; padding:0 20px 12px; flex-shrink:0; }
+    .quick-reply-btn { padding:6px 12px; background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.25); border-radius:20px; color:#818cf8; font-size:0.78rem; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+    .quick-reply-btn:hover { background:rgba(99,102,241,0.25); }
+    .chat-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid rgba(255,255,255,0.06); flex-shrink:0; }
+    .chat-input { flex:1; padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#f1f5f9; font-size:0.86rem; outline:none; transition:border 0.2s; }
+    .chat-input:focus { border-color:#6366f1; }
+    .chat-send-btn { padding:10px 16px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; border-radius:10px; color:#fff; font-size:0.86rem; cursor:pointer; font-weight:600; transition:opacity 0.2s; white-space:nowrap; }
+    .chat-send-btn:hover { opacity:0.85; }
+    /* Contact cards */
+    .contact-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:20px; }
+    @media(max-width:600px){ .contact-cards{grid-template-columns:1fr;} }
+    .contact-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:18px; text-align:center; transition:transform 0.2s,box-shadow 0.2s; }
+    .contact-card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(99,102,241,0.1); }
+    .contact-card .icon { font-size:1.8rem; margin-bottom:8px; }
+    .contact-card .cc-title { font-size:0.88rem; font-weight:600; color:#f1f5f9; }
+    .contact-card .cc-link { font-size:0.8rem; color:#818cf8; margin-top:4px; text-decoration:none; }
+    .contact-card .cc-link:hover { text-decoration:underline; }
+  </style>
+</head>
+<body class="app-body" data-page="help">
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-top">
+        <a href="dashboard.html" class="logo">
+          <span class="logo-mark">⚡</span>
+          <span>Comment<span style="color:var(--accent-light);">2</span>DM</span>
+        </a>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar">
+          <span id="collapseIcon">«</span>
+        </button>
+      </div>
+      <div class="sidebar-account" id="sidebarAccountArea">
+        <button class="account-selector" id="accountSwitcherBtn">
+          <div class="account-pill">
+            <div class="account-avatar-img" id="sidebarIgAvatar" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.75rem;">IG</div>
+            <div class="account-meta">
+              <span class="account-username" id="sidebarIgUsername">No Account</span>
+              <span class="account-status" id="sidebarIgStatus">Connect now</span>
+            </div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <nav class="app-nav" aria-label="Main Navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
+        <a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
+        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
+        <a href="messages.html" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
+        <a href="settings.html" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
+        <a href="help.html" class="active" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="dm-limit-card" id="dmLimitCard">
+          <div class="dm-limit-header"><span>Monthly DMs</span><strong id="dmLimitText">0 / 300</strong></div>
+          <div class="dm-progress-track"><div class="dm-progress-fill" id="dmProgressFill" style="width:5%;"></div></div>
+          <a href="billing.html" class="btn btn-ghost btn-sm btn-block" style="font-size:0.78rem;padding:5px;">Upgrade Plan ↗</a>
+        </div>
+        <div class="pie-gauge-collapsed" id="pieGaugeCollapsed">
+          <div class="pie-gauge" id="pieGaugeCircle"><div class="pie-gauge-inner" id="pieGaugeInner">0%</div></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-header">
         <div class="app-header-left">
-          <button class="menu-button" id="sidebarOpen" aria-label="Open navigation menu" aria-expanded="false"><span></span><span></span><span></span></button>
-          <a href="index.html" class="app-header-logo" aria-label="Nudge home"><span class="logo-mark"></span><span>Nudge</span></a>
-          <div class="app-header-copy">
-            <p class="eyebrow">Support</p>
-            <h1>Help Desk</h1>
+          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation menu">☰</button>
+          <div>
+            <span class="eyebrow" style="margin-bottom:0;">Support</span>
+            <h2 style="font-size:1.15rem;font-weight:700;">Help Desk</h2>
           </div>
         </div>
-        <div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span></div></div>
-      </header><main class="app-content"><section class="accounts-heading"><div><p class="eyebrow">Support center</p><h2>How can we help?</h2><p>Quick answers for setup, automations and Instagram connections.</p></div></section><div class="instagram-accounts"><section class="activity-card"><div class="card-heading"><h2>Instagram connection</h2><p>If connection says API access is blocked, the response is coming from Meta rather than your Nudge password or dashboard.</p></div></section><section class="activity-card"><div class="card-heading"><h2>Automations</h2><p>Connect an Instagram account, create a keyword, write the private reply and enable the automation. Analytics records comments and delivery outcomes.</p></div></section><section class="activity-card"><div class="card-heading"><h2>Still stuck?</h2><p>Use the exact error shown on screen when contacting support. Never send your Meta App Secret, access token or encryption key.</p></div></section><section class="activity-card">
-<div class="card-heading"><h2>Ask the Help Desk</h2><p>Get quick answers for Nudge setup and troubleshooting.</p></div>
-<div id="helpMessages" style="min-height:220px;max-height:420px;overflow:auto;padding:8px 0;" aria-live="polite"><p><strong>Nudge Help Desk:</strong> Tell me what you are trying to do and what error you see.</p></div>
-<form id="helpForm" style="display:flex;gap:10px;margin-top:12px;">
-<input id="helpInput" maxlength="1000" required placeholder="Ask a question..." style="flex:1;padding:12px;border:1px solid var(--line);border-radius:10px;">
-<button class="btn btn-accent" type="submit">Send</button>
-</form>
-<p style="margin-top:12px;">Need a human? <a href="mailto:nudge.support360@gmail.com?subject=Nudge%20Support">Email nudge.support360@gmail.com</a>. Never send passwords, API keys, access tokens or client secrets.</p>
-</section></div></main></div></div><div class="sidebar-backdrop" id="sidebarBackdrop"></div><script src="dashboard.js"></script><script src="help.js"></script></body></html>
+        <div class="header-user-menu">
+          <div style="position:relative;">
+            <button class="user-profile-trigger" id="userProfileBtn">
+              <div class="user-avatar-circle" id="userAvatarInitial">U</div>
+              <div style="text-align:left;display:flex;flex-direction:column;">
+                <span style="font-size:0.86rem;font-weight:600;color:#fff;" id="topbarUserName">Loading...</span>
+                <span class="plan-badge" id="topbarPlanBadge">Free</span>
+              </div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+              <a href="settings.html">⚙️ Settings</a>
+              <a href="billing.html">💳 Billing</a>
+              <div class="dropdown-divider"></div>
+              <a href="#" id="headerLogoutBtn">🚪 Sign out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="app-content">
+        <div>
+          <p class="eyebrow">Support</p>
+          <h1 style="font-size:1.5rem;font-weight:700;color:#f1f5f9;">Help Desk</h1>
+          <p style="color:rgba(255,255,255,0.4);font-size:0.86rem;margin-top:4px;">Find answers or chat with support directly.</p>
+        </div>
+
+        <div class="help-grid">
+          <!-- FAQ -->
+          <div class="glass-card">
+            <div style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:6px;">📚 Frequently Asked Questions</div>
+            <div style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:18px;">Click any question to expand.</div>
+            <div id="faqList">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Chat -->
+          <div class="glass-card chat-card">
+            <div class="chat-header">
+              <div class="chat-avatar">⚡</div>
+              <div style="flex:1;">
+                <div style="font-size:0.9rem;font-weight:600;color:#f1f5f9;">Comment2DM Support</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:2px;">
+                  <div class="online-dot"></div>
+                  <span style="font-size:0.75rem;color:#10b981;">Online · Usually replies instantly</span>
+                </div>
+              </div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-quick-replies">
+              <button class="quick-reply-btn" data-msg="How do I connect Instagram?">🔗 Connect Instagram</button>
+              <button class="quick-reply-btn" data-msg="My automation is not working">⚙️ Automation issue</button>
+              <button class="quick-reply-btn" data-msg="I have a billing question">💳 Billing</button>
+            </div>
+            <div class="chat-input-row">
+              <input type="text" class="chat-input" id="chatInput" placeholder="Type your message…" maxlength="500">
+              <button class="chat-send-btn" id="chatSendBtn">Send ↗</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact cards -->
+        <div class="contact-cards">
+          <div class="contact-card">
+            <div class="icon">📧</div>
+            <div class="cc-title">Email Support</div>
+            <a href="mailto:support@comment2dm.com" class="cc-link">support@comment2dm.com</a>
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:4px;">Response within 24h</div>
+          </div>
+          <div class="contact-card">
+            <div class="icon">📖</div>
+            <div class="cc-title">Documentation</div>
+            <a href="#" class="cc-link">Read the docs →</a>
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:4px;">Guides & tutorials</div>
+          </div>
+          <div class="contact-card">
+            <div class="icon">🐦</div>
+            <div class="cc-title">Twitter / X</div>
+            <a href="https://x.com" target="_blank" rel="noopener" class="cc-link">@comment2dm</a>
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:4px;">For updates & news</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <script src="dashboard.js"></script>
+  <script src="help.js"></script>
+</body>
+</html>

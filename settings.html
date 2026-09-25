@@ -1,12 +1,322 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settings - Nudge</title><link rel="stylesheet" href="styles.css"><link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
-</head><body class="app-body" data-page="settings"><div class="app-shell"><aside class="app-sidebar" id="appSidebar"><div class="sidebar-top"><a href="index.html" class="logo" aria-label="Nudge home"><span class="logo-mark"></span>Nudge</a><button class="sidebar-close" id="sidebarClose">×</button></div><nav class="app-nav"><a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">+</span>Dashboard</a><a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">i</span>Instagram Accounts</a><a href="automations.html" data-nav="automations"><span class="nav-icon">a</span>Automations</a><a href="messages.html" data-nav="messages"><span class="nav-icon">m</span>Messages</a><a href="analytics.html" data-nav="analytics"><span class="nav-icon">%</span>Analytics</a><a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">$</span>Creator Toolkit</a><a href="settings.html" data-nav="settings"><span class="nav-icon">*</span>Settings</a><a href="pricing.html" data-nav="pricing"><span class="nav-icon">₹</span>Pricing</a><a href="help.html" data-nav="help"><span class="nav-icon">?</span>Help Desk</a></nav><div class="sidebar-foot"><p>Instagram automation for creators.</p><a href="index.html">Back to website</a></div></aside><div class="app-main"><header class="app-header">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — Comment2DM</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .settings-layout { display:grid; grid-template-columns:220px 1fr; gap:20px; margin-top:20px; }
+    @media(max-width:768px){ .settings-layout{grid-template-columns:1fr;} }
+    .settings-tabs { display:flex; flex-direction:column; gap:4px; }
+    @media(max-width:768px){ .settings-tabs{flex-direction:row;flex-wrap:wrap;} }
+    .settings-tab { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; border:none; background:transparent; color:rgba(255,255,255,0.5); font-size:0.88rem; font-weight:500; cursor:pointer; text-align:left; transition:all 0.2s; width:100%; }
+    .settings-tab:hover { background:rgba(255,255,255,0.04); color:#f1f5f9; }
+    .settings-tab.active { background:rgba(99,102,241,0.15); color:#818cf8; }
+    .settings-panel { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:28px; display:none; }
+    .settings-panel.active { display:block; }
+    .panel-title { font-size:1.1rem; font-weight:700; color:#f1f5f9; margin-bottom:4px; }
+    .panel-sub { font-size:0.84rem; color:rgba(255,255,255,0.4); margin-bottom:24px; }
+    .form-row { margin-bottom:18px; }
+    .form-row label { display:block; font-size:0.82rem; color:rgba(255,255,255,0.5); margin-bottom:6px; font-weight:500; }
+    .form-input { width:100%; padding:10px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#f1f5f9; font-size:0.9rem; outline:none; transition:border 0.2s; box-sizing:border-box; }
+    .form-input:focus { border-color:#6366f1; background:rgba(99,102,241,0.05); }
+    .form-input:read-only { opacity:0.5; cursor:not-allowed; }
+    .char-counter { font-size:0.75rem; color:rgba(255,255,255,0.3); text-align:right; margin-top:4px; }
+    .avatar-section { display:flex; align-items:center; gap:20px; margin-bottom:24px; }
+    .avatar-preview { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#ec4899); display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:700; color:#fff; flex-shrink:0; position:relative; }
+    .avatar-change-btn { font-size:0.82rem; color:#818cf8; cursor:pointer; border:1px solid rgba(99,102,241,0.3); border-radius:8px; padding:6px 14px; background:rgba(99,102,241,0.08); transition:all 0.2s; }
+    .avatar-change-btn:hover { background:rgba(99,102,241,0.18); }
+    .pw-wrap { position:relative; }
+    .pw-wrap input { padding-right:44px; }
+    .pw-toggle { position:absolute; right:14px; top:50%; transform:translateY(-50%); cursor:pointer; color:rgba(255,255,255,0.35); font-size:1rem; background:none; border:none; }
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .toggle-row:last-child { border-bottom:none; }
+    .toggle-label { font-size:0.88rem; color:#e2e8f0; }
+    .toggle-sub { font-size:0.78rem; color:rgba(255,255,255,0.35); margin-top:2px; }
+    .toggle-switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; cursor:pointer; inset:0; background:rgba(255,255,255,0.1); border-radius:24px; transition:0.3s; }
+    .toggle-slider:before { content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:white; border-radius:50%; transition:0.3s; }
+    .toggle-switch input:checked + .toggle-slider { background:linear-gradient(90deg,#6366f1,#8b5cf6); }
+    .toggle-switch input:checked + .toggle-slider:before { transform:translateX(20px); }
+    .plan-display-card { background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:12px; padding:18px 20px; margin-bottom:18px; }
+    .danger-card { border:1px solid rgba(244,63,94,0.3); border-radius:12px; padding:20px; background:rgba(244,63,94,0.04); }
+    .danger-card h3 { color:#f43f5e; font-size:0.95rem; margin-bottom:6px; }
+    .danger-card p { color:rgba(255,255,255,0.5); font-size:0.84rem; margin-bottom:16px; }
+    .btn-danger { background:rgba(244,63,94,0.15); color:#f43f5e; border:1px solid rgba(244,63,94,0.3); padding:10px 20px; border-radius:10px; font-size:0.86rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .btn-danger:hover { background:rgba(244,63,94,0.25); }
+    .toast-container { position:fixed; top:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
+    .toast { padding:12px 18px; border-radius:10px; font-size:0.86rem; font-weight:500; opacity:0; transform:translateX(20px); transition:all 0.3s; pointer-events:none; }
+    .toast.show { opacity:1; transform:translateX(0); }
+    .toast.success { background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); color:#10b981; }
+    .toast.error { background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#f43f5e; }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); z-index:1000; display:none; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:#111116; border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:32px; max-width:400px; width:90%; }
+    .modal-box h3 { color:#f43f5e; margin-bottom:8px; font-size:1.1rem; }
+    .modal-box p { color:rgba(255,255,255,0.5); font-size:0.86rem; margin-bottom:20px; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+    .coming-soon-badge { background:rgba(245,158,11,0.15); color:#f59e0b; border-radius:20px; padding:2px 10px; font-size:0.73rem; font-weight:600; }
+  </style>
+</head>
+<body class="app-body" data-page="settings">
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-top">
+        <a href="dashboard.html" class="logo">
+          <span class="logo-mark">⚡</span>
+          <span>Comment<span style="color:var(--accent-light);">2</span>DM</span>
+        </a>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar">
+          <span id="collapseIcon">«</span>
+        </button>
+      </div>
+      <div class="sidebar-account" id="sidebarAccountArea">
+        <button class="account-selector" id="accountSwitcherBtn">
+          <div class="account-pill">
+            <div class="account-avatar-img" id="sidebarIgAvatar" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.75rem;">IG</div>
+            <div class="account-meta">
+              <span class="account-username" id="sidebarIgUsername">No Account</span>
+              <span class="account-status" id="sidebarIgStatus">Connect now</span>
+            </div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+      </div>
+      <nav class="app-nav" aria-label="Main Navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
+        <a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
+        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
+        <a href="messages.html" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
+        <a href="settings.html" class="active" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
+        <a href="help.html" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="dm-limit-card" id="dmLimitCard">
+          <div class="dm-limit-header"><span>Monthly DMs</span><strong id="dmLimitText">0 / 300</strong></div>
+          <div class="dm-progress-track"><div class="dm-progress-fill" id="dmProgressFill" style="width:5%;"></div></div>
+          <a href="billing.html" class="btn btn-ghost btn-sm btn-block" style="font-size:0.78rem;padding:5px;">Upgrade Plan ↗</a>
+        </div>
+        <div class="pie-gauge-collapsed" id="pieGaugeCollapsed">
+          <div class="pie-gauge" id="pieGaugeCircle"><div class="pie-gauge-inner" id="pieGaugeInner">0%</div></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-header">
         <div class="app-header-left">
-          <button class="menu-button" id="sidebarOpen" aria-label="Open navigation menu" aria-expanded="false"><span></span><span></span><span></span></button>
-          <a href="index.html" class="app-header-logo" aria-label="Nudge home"><span class="logo-mark"></span><span>Nudge</span></a>
-          <div class="app-header-copy">
-            <p class="eyebrow">Workspace</p>
-            <h1>Settings</h1>
+          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation menu">☰</button>
+          <div>
+            <span class="eyebrow" style="margin-bottom:0;">Workspace</span>
+            <h2 style="font-size:1.15rem;font-weight:700;">Settings</h2>
           </div>
         </div>
-        <div class="profile-area"><div class="profile-copy"><strong id="userName">Loading...</strong><span id="userEmail">Verifying account</span><span id="planBadge" class="plan-badge" aria-label="Current subscription plan">Free</span></div></div>
-      </header><main class="app-content"><div id="dashboardError" class="form-error"></div><section class="accounts-heading"><div><p class="eyebrow">Preferences</p><h2>Workspace settings</h2><p>Manage your Nudge profile and support preferences.</p></div></section><section class="activity-card"><div class="card-heading"><div><h2>Profile</h2><p>Update the name shown across your workspace.</p></div></div><form id="settingsForm" style="margin-top:22px;max-width:560px"><div class="field"><label for="settingsName">Name</label><input class="form-control" id="settingsName" required maxlength="100"></div><div class="field"><label for="settingsEmail">Email</label><input class="form-control" id="settingsEmail" type="email" required maxlength="254"></div><button class="btn btn-accent" type="submit">Save changes</button></form><div id="settingsNotice" class="success-notice" hidden style="margin-top:18px"></div></section><section class="activity-card" style="margin-top:20px"><div class="card-heading"><div><p class="eyebrow">Billing</p><h2>Subscription & billing</h2><p>See your current plan, usage and manage your subscription.</p></div></div><div id="subscriptionPanel" style="margin-top:20px"><p class="overview-note">Loading subscription…</p></div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><a href="pricing.html" class="btn btn-accent">View plans & upgrade</a><button class="btn btn-ghost" id="cancelSubscription" type="button" hidden>Cancel subscription</button></div></section><section class="activity-card" style="margin-top:20px"><div class="card-heading"><div><p class="eyebrow">Account</p><h2>Sign out</h2><p>Sign out of this Nudge account on this browser.</p></div></div><button class="btn btn-ghost" id="logoutButton" type="button" style="margin-top:18px">Log out</button></section><section class="activity-card" style="margin-top:20px"><div class="card-heading"><div><h2>Notifications</h2><p>Notification controls will be expanded as messaging and reports are added.</p></div></div><label class="checkbox-row" style="margin-top:18px"><input type="checkbox" checked disabled><span>Product and automation alerts</span></label><label class="checkbox-row" style="margin-top:12px"><input type="checkbox" disabled><span>Email performance reports — coming soon</span></label></section></main></div></div><div class="sidebar-backdrop" id="sidebarBackdrop"></div><script src="dashboard.js"></script><script src="settings.js"></script></body></html>
+        <div class="header-user-menu">
+          <a href="help.html" class="notification-bell" title="Help Desk"><span>💬</span></a>
+          <div style="position:relative;">
+            <button class="user-profile-trigger" id="userProfileBtn">
+              <div class="user-avatar-circle" id="userAvatarInitial">U</div>
+              <div style="text-align:left;display:flex;flex-direction:column;">
+                <span style="font-size:0.86rem;font-weight:600;color:#fff;" id="topbarUserName">Loading...</span>
+                <span class="plan-badge" id="topbarPlanBadge">Free</span>
+              </div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+              <a href="settings.html">⚙️ Settings</a>
+              <a href="billing.html">💳 Billing</a>
+              <div class="dropdown-divider"></div>
+              <a href="#" id="headerLogoutBtn">🚪 Sign out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="app-content">
+        <div>
+          <p class="eyebrow">Account</p>
+          <h1 style="font-size:1.5rem;font-weight:700;color:#f1f5f9;">Settings</h1>
+          <p style="color:rgba(255,255,255,0.4);font-size:0.86rem;margin-top:4px;">Manage your profile, security, and preferences.</p>
+        </div>
+
+        <div class="settings-layout">
+          <!-- Tab nav -->
+          <nav class="settings-tabs">
+            <button class="settings-tab active" data-panel="profile">👤 Profile</button>
+            <button class="settings-tab" data-panel="security">🔒 Security</button>
+            <button class="settings-tab" data-panel="notifications">🔔 Notifications</button>
+            <button class="settings-tab" data-panel="billing">💳 Billing</button>
+            <button class="settings-tab" data-panel="danger">⚠️ Danger Zone</button>
+          </nav>
+
+          <!-- Panels -->
+          <div>
+
+            <!-- Profile -->
+            <div class="settings-panel active" id="panel-profile">
+              <div class="panel-title">Profile Information</div>
+              <div class="panel-sub">Update your name, contact info, and avatar.</div>
+              <div class="avatar-section">
+                <div class="avatar-preview" id="avatarPreview">U</div>
+                <div>
+                  <div style="font-size:0.84rem;color:rgba(255,255,255,0.5);margin-bottom:8px;">Profile picture</div>
+                  <button class="avatar-change-btn" id="avatarBtn">Change Avatar</button>
+                  <input type="file" id="avatarFileInput" accept="image/*" hidden>
+                </div>
+              </div>
+              <form id="profileForm">
+                <div class="form-row">
+                  <label for="profileName">Full Name</label>
+                  <input class="form-input" id="profileName" type="text" placeholder="Your name" maxlength="100" required>
+                </div>
+                <div class="form-row">
+                  <label for="profileEmail">Email Address</label>
+                  <input class="form-input" id="profileEmail" type="email" readonly>
+                </div>
+                <div class="form-row">
+                  <label for="profilePhone">Phone Number <span style="color:rgba(255,255,255,0.3);font-size:0.75rem;">(optional)</span></label>
+                  <input class="form-input" id="profilePhone" type="tel" placeholder="+91 9999 999 999" maxlength="20">
+                </div>
+                <div class="form-row">
+                  <label for="profileBio">Bio <span style="color:rgba(255,255,255,0.3);font-size:0.75rem;">(max 160 chars)</span></label>
+                  <textarea class="form-input" id="profileBio" rows="3" maxlength="160" placeholder="Tell us about yourself…" style="resize:none;"></textarea>
+                  <div class="char-counter"><span id="bioCount">0</span>/160</div>
+                </div>
+                <button type="submit" class="btn btn-accent" id="saveProfileBtn">Save Changes</button>
+              </form>
+            </div>
+
+            <!-- Security -->
+            <div class="settings-panel" id="panel-security">
+              <div class="panel-title">Security Settings</div>
+              <div class="panel-sub">Change your password and manage your sessions.</div>
+              <form id="passwordForm">
+                <div class="form-row">
+                  <label for="currentPw">Current Password</label>
+                  <div class="pw-wrap">
+                    <input class="form-input" type="password" id="currentPw" placeholder="••••••••" required>
+                    <button type="button" class="pw-toggle" data-target="currentPw">👁</button>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label for="newPw">New Password</label>
+                  <div class="pw-wrap">
+                    <input class="form-input" type="password" id="newPw" placeholder="Min. 8 characters" minlength="8" required>
+                    <button type="button" class="pw-toggle" data-target="newPw">👁</button>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label for="confirmPw">Confirm New Password</label>
+                  <div class="pw-wrap">
+                    <input class="form-input" type="password" id="confirmPw" placeholder="Repeat new password" required>
+                    <button type="button" class="pw-toggle" data-target="confirmPw">👁</button>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-accent">Update Password</button>
+              </form>
+              <div style="margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div>
+                    <div style="font-size:0.9rem;color:#e2e8f0;font-weight:500;">Two-Factor Authentication</div>
+                    <div style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin-top:2px;">Add an extra layer of security</div>
+                  </div>
+                  <span class="coming-soon-badge">Coming Soon</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="settings-panel" id="panel-notifications">
+              <div class="panel-title">Notification Preferences</div>
+              <div class="panel-sub">Email notifications are sent to your registered email address.</div>
+              <div class="toggle-row">
+                <div><div class="toggle-label">DM Sent Alerts</div><div class="toggle-sub">Get notified when DMs are sent successfully</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="notif_dm_sent" checked><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-row">
+                <div><div class="toggle-label">Failed Automation Alerts</div><div class="toggle-sub">Alerts when an automation fails to send a DM</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="notif_failed" checked><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-row">
+                <div><div class="toggle-label">Weekly Performance Digest</div><div class="toggle-sub">Weekly summary of your automation performance</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="notif_weekly"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-row">
+                <div><div class="toggle-label">Billing Reminders</div><div class="toggle-sub">Payment confirmations and renewal reminders</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="notif_billing" checked><span class="toggle-slider"></span></label>
+              </div>
+              <button class="btn btn-accent" id="saveNotifBtn" style="margin-top:16px;">Save Preferences</button>
+            </div>
+
+            <!-- Billing -->
+            <div class="settings-panel" id="panel-billing">
+              <div class="panel-title">Subscription & Billing</div>
+              <div class="panel-sub">Manage your current plan and payment method.</div>
+              <div class="plan-display-card" id="billingPlanCard">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                  <div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.07em;">Current Plan</div>
+                    <div style="font-size:1.3rem;font-weight:700;color:#f1f5f9;margin-top:2px;" id="billingPlanName">Free</div>
+                  </div>
+                  <span class="plan-badge" id="billingBadge">Free</span>
+                </div>
+                <div style="margin-bottom:10px;">
+                  <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:5px;">
+                    <span>DMs used</span><span id="billingDmUsage">0 / 300</span>
+                  </div>
+                  <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+                    <div id="billingDmBar" style="height:100%;background:linear-gradient(90deg,#6366f1,#ec4899);width:0%;border-radius:3px;transition:width 0.5s;"></div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="pricing.html" class="btn btn-accent">View Plans & Upgrade</a>
+                <a href="billing.html" class="btn btn-ghost">Manage Billing →</a>
+              </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="settings-panel" id="panel-danger">
+              <div class="panel-title" style="color:#f43f5e;">⚠️ Danger Zone</div>
+              <div class="panel-sub">Irreversible actions. Please proceed with caution.</div>
+              <div class="danger-card">
+                <h3>Delete Account</h3>
+                <p>This will permanently delete all your automations, disconnect all Instagram accounts, and erase all your data. This action <strong>cannot be undone</strong>.</p>
+                <button class="btn-danger" id="deleteAccountBtn">Delete My Account</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+      <h3>⚠️ Delete Account</h3>
+      <p>This will permanently delete everything. Type <strong style="color:#f43f5e;">DELETE</strong> to confirm.</p>
+      <input class="form-input" id="deleteConfirmInput" type="text" placeholder="Type DELETE here" style="margin-bottom:16px;">
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="cancelDeleteBtn">Cancel</button>
+        <button class="btn-danger" id="confirmDeleteBtn">Yes, delete my account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <script src="dashboard.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>
