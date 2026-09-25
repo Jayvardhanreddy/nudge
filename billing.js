@@ -30,12 +30,25 @@
     if (!container) return;
 
     container.innerHTML = Object.entries(PLANS).map(([key, plan]) => {
-      const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
+      const basePrice = isAnnual ? plan.annualPrice : plan.monthlyPrice;
+      const discountAmount = appliedDiscount > 0 ? (basePrice * (appliedDiscount / 100)) : 0;
+      const finalPrice = Math.max(0, basePrice - discountAmount);
+
       const isCurrent = key === currentPlan;
       const isPopular = key === 'pro';
-      const priceDisplay = price === 0 ? '₹0' : `₹${price.toLocaleString('en-IN')}`;
-      const period = price === 0 ? 'Forever free' : (isAnnual ? '/ year' : '/ month');
-      const originalMonthly = isAnnual && plan.monthlyPrice > 0 ? `₹${(plan.monthlyPrice * 12).toLocaleString('en-IN')} /yr` : '';
+      
+      let priceDisplay = '₹0';
+      if (finalPrice > 0) {
+        priceDisplay = `₹${Math.round(finalPrice).toLocaleString('en-IN')}`;
+      }
+      
+      let originalDisplay = '';
+      if (appliedDiscount > 0 && basePrice > 0) {
+        originalDisplay = `<s style="opacity:0.5;font-size:0.8rem;margin-right:6px;">₹${basePrice.toLocaleString('en-IN')}</s>`;
+      }
+      
+      const period = basePrice === 0 ? 'Forever free' : (isAnnual ? '/ year' : '/ month');
+      const originalMonthly = isAnnual && plan.monthlyPrice > 0 && !appliedDiscount ? `₹${(plan.monthlyPrice * 12).toLocaleString('en-IN')} /yr` : '';
 
       let btnClass = key;
       let btnText = isCurrent ? '✓ Current Plan' : key === 'free' ? 'Downgrade to Free' : `Upgrade to ${plan.name}`;
@@ -48,6 +61,7 @@
         ${isPopular ? '<div class="popular-badge">⭐ Most Popular</div>' : ''}
         <div class="plan-name">${plan.name}</div>
         <div class="plan-price">
+          ${originalDisplay}
           <span class="amount">${priceDisplay}</span>
           <span class="period">${period}</span>
           ${originalMonthly ? `<span class="original">${originalMonthly}</span>` : ''}
@@ -58,9 +72,48 @@
       </div>`;
     }).join('');
 
-    // Bind upgrade buttons
     container.querySelectorAll('.plan-cta:not([disabled])').forEach(btn => {
       btn.addEventListener('click', () => initiateCheckout(btn.dataset.plan));
+    });
+  }
+
+  // ── Coupons ───────────────────────────────────────────────────────────────
+  let appliedDiscount = 0;
+  let appliedCouponCode = '';
+
+  const applyBtn = document.getElementById('applyCouponBtn');
+  const couponInput = document.getElementById('couponCodeInput');
+  const couponMsg = document.getElementById('couponMessage');
+
+  if (applyBtn) {
+    applyBtn.addEventListener('click', async () => {
+      const code = couponInput.value.trim().toUpperCase();
+      if (!code) return;
+      try {
+        const res = await fetch('/api/billing/validate-coupon', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...window.getAuthHeaders() },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (data.valid) {
+          appliedDiscount = data.discount;
+          appliedCouponCode = code;
+          couponMsg.textContent = `Coupon applied: ${data.discount}% OFF! 🎉`;
+          couponMsg.style.color = '#10b981';
+          couponMsg.hidden = false;
+          renderPlanCards();
+        } else {
+          couponMsg.textContent = '❌ Invalid or expired coupon code.';
+          couponMsg.style.color = '#f43f5e';
+          couponMsg.hidden = false;
+          appliedDiscount = 0;
+          appliedCouponCode = '';
+          renderPlanCards();
+        }
+      } catch (e) {
+        console.error(e);
+      }
     });
   }
 
@@ -71,11 +124,14 @@
       return;
     }
     try {
-      const price = isAnnual ? PLANS[plan].annualPrice : PLANS[plan].monthlyPrice;
+      const basePrice = isAnnual ? PLANS[plan].annualPrice : PLANS[plan].monthlyPrice;
+      const discountAmount = appliedDiscount > 0 ? (basePrice * (appliedDiscount / 100)) : 0;
+      const finalPrice = Math.max(0, Math.round(basePrice - discountAmount));
+
       const res = await fetch('/api/billing/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(window.getAuthHeaders ? window.getAuthHeaders() : {}) },
-        body: JSON.stringify({ plan, billing: isAnnual ? 'annual' : 'monthly', amount: price })
+        body: JSON.stringify({ plan, billing: isAnnual ? 'annual' : 'monthly', amount: finalPrice, coupon: appliedCouponCode })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create order');
@@ -85,7 +141,7 @@
         amount: data.amount,
         currency: data.currency || 'INR',
         name: 'Comment2DM',
-        description: `${PLANS[plan].name} Plan – ${isAnnual ? 'Annual' : 'Monthly'}`,
+        description: `${PLANS[plan].name} Plan – ${isAnnual ? 'Annual' : 'Monthly'}` + (appliedDiscount ? ` (${appliedDiscount}% OFF)` : ''),
         order_id: data.orderId,
         prefill: { email: userEmail },
         theme: { color: '#6366f1' },
@@ -117,15 +173,27 @@
     }
   }
 
-  // ── Load billing status ─────────────────────────────────────────────────────
+  // ── Load billing status and dynamic prices ────────────────────────────────
   async function loadBillingStatus() {
     try {
+      // First fetch dynamic prices
+      const priceRes = await fetch('/api/billing/prices');
+      if (priceRes.ok) {
+        const prices = await priceRes.json();
+        PLANS.pro.monthlyPrice = prices.pro_monthly || 999;
+        PLANS.pro.annualPrice = (prices.pro_monthly || 999) * 10;
+        PLANS.elite.monthlyPrice = prices.elite_monthly || 2499;
+        PLANS.elite.annualPrice = (prices.elite_monthly || 2499) * 10;
+      }
+
+      // Then fetch user billing status
       const res = await fetch('/api/billing/status', { headers: window.getAuthHeaders ? window.getAuthHeaders() : {} });
-      if (!res.ok) return;
+      if (!res.ok) { renderPlanCards(); return; }
+      
       const data = await res.json();
       currentPlan = (data.plan || 'free').toLowerCase();
-      const used = data.dmsUsed || data.dmsSent || 0;
-      const limit = data.dmsLimit || 300;
+      const used = data.usage?.dmMonthly || 0;
+      const limit = data.limits?.dmMonthly || 300;
       const pct = Math.min(100, Math.round((used / limit) * 100));
       const planName = currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
 

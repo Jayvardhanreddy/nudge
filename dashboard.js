@@ -10,7 +10,7 @@
   const mobileMenuToggle = document.getElementById('mobileMenuToggle');
   const userProfileBtn = document.getElementById('userProfileBtn');
   const userDropdownMenu = document.getElementById('userDropdownMenu');
-  const logoutBtn = document.getElementById('logoutBtn');
+  const logoutBtn = document.getElementById('headerLogoutBtn') || document.getElementById('logoutBtn');
 
   // Authorization helper
   window.getAuthHeaders = function (extraHeaders = {}) {
@@ -56,6 +56,16 @@
       userDropdownMenu.classList.remove('show');
     });
   }
+
+  // Auto-highlight active nav link
+  const currentPath = window.location.pathname.split('/').pop() || 'dashboard.html';
+  document.querySelectorAll('.app-nav a').forEach(link => {
+    if (link.getAttribute('href') === currentPath) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
 
   // 3. Logout Handler
   if (logoutBtn) {

@@ -992,7 +992,7 @@ app.get('/api/analytics/events', requireAuth, async (request, response) => {
     const status = request.query.status || 'all';
     const days = parseInt(request.query.days) || 7;
     const search = request.query.search || '';
-    const col = db.collections ? db.collections.automation_events : null;
+    const col = db.collections ? db.collections().automation_events : null;
     if (!col) return response.json({ events: [], total: 0, sent: 0, failed: 0, pending: 0, pages: 1 });
     const since = new Date(Date.now() - days * 86400000);
     const filter = { user_id: request.user.id, created_at: { $gte: since } };
@@ -1012,7 +1012,7 @@ app.get('/api/analytics/events', requireAuth, async (request, response) => {
 // ── Admin endpoints ─────────────────────────────────────────────────────────
 app.get('/api/admin/users', requireAdmin, async (request, response) => {
   try {
-    const users = db.collections ? await db.collections.users.find({}, { projection: { password: 0 } }).sort({ created_at: -1 }).limit(500).toArray() : [];
+    const users = db.collections ? await db.collections().users.find({}, { projection: { password: 0 } }).sort({ created_at: -1 }).limit(500).toArray() : [];
     return response.json({ users });
   } catch (err) { return response.status(500).json({ error: err.message }); }
 });
@@ -1022,7 +1022,7 @@ app.patch('/api/admin/users/:id/plan', requireAdmin, async (request, response) =
     const { plan } = request.body || {};
     if (!['free', 'pro', 'elite'].includes(plan)) return response.status(400).json({ error: 'Invalid plan' });
     const { ObjectId } = require('mongodb');
-    await db.collections.users.updateOne({ _id: new ObjectId(request.params.id) }, { $set: { plan, updated_at: new Date() } });
+    await db.collections().users.updateOne({ _id: new ObjectId(request.params.id) }, { $set: { plan, updated_at: new Date() } });
     return response.json({ success: true });
   } catch (err) { return response.status(500).json({ error: err.message }); }
 });
@@ -1030,16 +1030,16 @@ app.patch('/api/admin/users/:id/plan', requireAdmin, async (request, response) =
 app.patch('/api/admin/users/:id/suspend', requireAdmin, async (request, response) => {
   try {
     const { ObjectId } = require('mongodb');
-    const user = await db.collections.users.findOne({ _id: new ObjectId(request.params.id) });
+    const user = await db.collections().users.findOne({ _id: new ObjectId(request.params.id) });
     if (!user) return response.status(404).json({ error: 'User not found' });
-    await db.collections.users.updateOne({ _id: new ObjectId(request.params.id) }, { $set: { suspended: !user.suspended, updated_at: new Date() } });
+    await db.collections().users.updateOne({ _id: new ObjectId(request.params.id) }, { $set: { suspended: !user.suspended, updated_at: new Date() } });
     return response.json({ success: true, suspended: !user.suspended });
   } catch (err) { return response.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/admin/revenue', requireAdmin, async (request, response) => {
   try {
-    const col = db.collections ? db.collections.payments : null;
+    const col = db.collections ? db.collections().payments : null;
     if (!col) return response.json({ months: [] });
     const since = new Date(); since.setMonth(since.getMonth() - 6);
     const payments = await col.find({ status: 'paid', created_at: { $gte: since } }).toArray();
@@ -1055,13 +1055,13 @@ app.get('/api/admin/revenue', requireAdmin, async (request, response) => {
 app.get('/api/admin/health', requireAdmin, async (request, response) => {
   const start = Date.now();
   let dbOk = false;
-  try { await db.collections.users.findOne({}, { projection: { _id: 1 } }); dbOk = true; } catch {}
+  try { await db.collections().users.findOne({}, { projection: { _id: 1 } }); dbOk = true; } catch {}
   return response.json({ api: true, database: dbOk, latency: Date.now() - start, timestamp: new Date().toISOString() });
 });
 
 app.get('/api/admin/contacts', requireAdmin, async (request, response) => {
   try {
-    const col = db.collections ? db.collections.contacts : null;
+    const col = db.collections ? db.collections().contacts : null;
     const contacts = col ? await col.find({}).sort({ created_at: -1 }).limit(100).toArray() : [];
     return response.json({ contacts });
   } catch (err) { return response.status(500).json({ error: err.message }); }
@@ -1070,8 +1070,78 @@ app.get('/api/admin/contacts', requireAdmin, async (request, response) => {
 app.patch('/api/admin/contacts/:id/resolve', requireAdmin, async (request, response) => {
   try {
     const { ObjectId } = require('mongodb');
-    await db.collections.contacts.updateOne({ _id: new ObjectId(request.params.id) }, { $set: { resolved: true, resolved_at: new Date() } });
+    await db.collections().contacts.updateOne({ _id: new ObjectId(request.params.id) }, { $set: { resolved: true, resolved_at: new Date() } });
     return response.json({ success: true });
+  } catch (err) { return response.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/admin/config', requireAdmin, async (request, response) => {
+  try {
+    const col = db.collections ? db.collections().billing_plans : null;
+    const coup = db.collections ? db.collections().coupons : null;
+    const pricesDoc = col ? await col.findOne({ _id: 'global_prices' }) : null;
+    const coupons = coup ? await coup.find({}).toArray() : [];
+    return response.json({ 
+      prices: pricesDoc || { pro_monthly: 999, elite_monthly: 2499 },
+      coupons: coupons.map(c => ({ code: c._id, discount: c.discount }))
+    });
+  } catch (err) { return response.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/admin/config/prices', requireAdmin, async (request, response) => {
+  try {
+    const { pro_monthly, elite_monthly } = request.body || {};
+    if (db.collections) {
+      await db.collections().billing_plans.updateOne(
+        { _id: 'global_prices' }, 
+        { $set: { pro_monthly: pro_monthly || 999, elite_monthly: elite_monthly || 2499, updated_at: new Date() } },
+        { upsert: true }
+      );
+    }
+    return response.json({ success: true });
+  } catch (err) { return response.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/admin/config/coupon', requireAdmin, async (request, response) => {
+  try {
+    const { code, discount } = request.body || {};
+    if (!code || !discount) return response.status(400).json({ error: 'Code and discount required' });
+    if (db.collections) {
+      await db.collections().coupons.updateOne(
+        { _id: code.toUpperCase() }, 
+        { $set: { discount: Number(discount), created_at: new Date() } },
+        { upsert: true }
+      );
+    }
+    return response.json({ success: true });
+  } catch (err) { return response.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/admin/config/coupon/:code', requireAdmin, async (request, response) => {
+  try {
+    if (db.collections) {
+      await db.collections().coupons.deleteOne({ _id: request.params.code.toUpperCase() });
+    }
+    return response.json({ success: true });
+  } catch (err) { return response.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/billing/prices', async (request, response) => {
+  try {
+    const col = db.collections ? db.collections().billing_plans : null;
+    const pricesDoc = col ? await col.findOne({ _id: 'global_prices' }) : null;
+    return response.json(pricesDoc || { pro_monthly: 999, elite_monthly: 2499 });
+  } catch (err) { return response.json({ pro_monthly: 999, elite_monthly: 2499 }); }
+});
+
+app.post('/api/billing/validate-coupon', async (request, response) => {
+  try {
+    const { code } = request.body || {};
+    if (!code) return response.status(400).json({ error: 'Code required' });
+    const col = db.collections ? db.collections().coupons : null;
+    const coupon = col ? await col.findOne({ _id: code.toUpperCase() }) : null;
+    if (!coupon) return response.status(404).json({ error: 'Invalid coupon' });
+    return response.json({ valid: true, discount: coupon.discount });
   } catch (err) { return response.status(500).json({ error: err.message }); }
 });
 

@@ -22,7 +22,12 @@ function collections() {
     automationEvents: database.collection('automation_events'),
     counters: database.collection('counters'),
     rateLimits: database.collection('rate_limits'),
-    sessions: database.collection('sessions')
+    sessions: database.collection('sessions'),
+    contacts: database.collection('contacts'),
+    payments: database.collection('payments'),
+    billing_plans: database.collection('billing_plans'),
+    coupons: database.collection('coupons'),
+    subscriptions: database.collection('subscriptions')
   };
 }
 
