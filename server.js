@@ -926,7 +926,7 @@ function creatorFallback(type, body) {
       inspirational: [`Stop scrolling if you want to ${topic || 'change your life'}…`, `The ${topic || 'secret'} nobody tells you about…`, `I went from zero to ${topic || 'success'} in 30 days — here's how`, `What if I told you ${topic || 'this'} was easier than you think?`, `This changed everything for me 👇`],
       funny: [`POV: You discovered ${topic || 'the hack'} too late 😭`, `Me before vs after ${topic || 'this'} 💀`, `Nobody: Absolutely nobody: Me: ${topic || 'overthinking'}`, `Wait for the plot twist 😂`, `Things that hit different at 2am 👇`],
       educational: [`Here are 5 things about ${topic || 'this'} nobody talks about`, `The complete beginner's guide to ${topic || 'this'}`, `How to ${topic || 'get started'} in 60 seconds`, `${topic || 'This'} explained simply 🧵`, `The truth about ${topic || 'this'} (backed by data)`],
-      controversial: [`Hot take: ${topic || 'You're doing this wrong'}`, `Unpopular opinion about ${topic || 'this industry'}…`, `I'm tired of pretending ${topic || 'this'} works`, `The ${topic || 'advice'} everyone gives is wrong`, `Say it louder: ${topic || 'This needs to change'}`],
+      controversial: [`Hot take: ${topic || "You're doing this wrong"}`, `Unpopular opinion about ${topic || 'this industry'}…`, `I'm tired of pretending ${topic || 'this'} works`, `The ${topic || 'advice'} everyone gives is wrong`, `Say it louder: ${topic || 'This needs to change'}`],
       emotional: [`This hit me harder than I expected 💔`, `For everyone struggling with ${topic || 'this'}…`, `Nobody prepared me for this moment`, `If you need to hear this today…`, `The day everything changed for me 🥺`]
     };
     return (toneMap[tone] || toneMap.inspirational).slice(0, count);
