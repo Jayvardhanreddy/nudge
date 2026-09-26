@@ -195,18 +195,22 @@
           card.querySelector('.disconnect-btn').addEventListener('click', async () => {
             if (!confirm(`Are you sure you want to disconnect @${acct.username}? Automations on this account will stop running.`)) return;
             try {
-              await fetch(`/api/instagram/accounts/${encodeURIComponent(acct.id)}`, {
+              const res = await fetch(`/api/instagram/accounts/${encodeURIComponent(acct.id)}`, {
                 method: 'DELETE',
                 headers: window.getAuthHeaders(),
                 credentials: 'same-origin'
               });
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to disconnect');
+              }
               sessionStorage.removeItem('comment2dm_cached_accounts');
               card.remove();
               if (container.children.length === 0) emptyState.hidden = false;
               notice.textContent = 'Account disconnected.';
               notice.hidden = false;
             } catch (e) {
-              alert('Failed to disconnect account.');
+              alert('Failed to disconnect account: ' + e.message);
             }
           });
 

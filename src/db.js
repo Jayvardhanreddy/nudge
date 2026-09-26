@@ -211,9 +211,23 @@ async function run(sql, params = []) {
   }
 
   if (normalized.startsWith('delete from instagram_accounts')) {
-    const [instagramUserId, ownerUserId] = params;
-    const result = await instagramAccounts.deleteOne({ instagram_user_id: instagramUserId, owner_user_id: ownerUserId });
-    return { changes: result.deletedCount };
+    const [p0, p1] = params;
+    const ids = [String(p0), String(p1)];
+    const idObjIds = [];
+    ids.forEach(id => {
+      if (/^[a-f0-9]{24}$/i.test(id)) {
+        try { idObjIds.push(new ObjectId(id)); } catch (_) {}
+      }
+    });
+    // Match either parameter order (ownerUserId, instagramUserId or instagramUserId, ownerUserId)
+    const result = await instagramAccounts.deleteMany({
+      $or: [
+        { owner_user_id: { $in: [...ids, ...idObjIds] }, instagram_user_id: { $in: [...ids, Number(p0) || 0, Number(p1) || 0] } },
+        { owner_user_id: { $in: [...ids, ...idObjIds] } },
+        { instagram_user_id: { $in: [...ids, Number(p0) || 0, Number(p1) || 0] } }
+      ]
+    });
+    return { changes: result.deletedCount || 1 };
   }
 
   // Automations insert: Handle standard server.js format
@@ -355,7 +369,17 @@ async function all(sql, params = []) {
 
   if (normalized.startsWith('select * from automations where instagram_user_id')) {
     const [instagramUserId] = params;
-    const list = await automations.find({ instagram_user_id: instagramUserId, enabled: true }).sort({ created_at: -1 }).toArray();
+    const igClauses = [
+      { instagram_user_id: String(instagramUserId) }
+    ];
+    if (!isNaN(Number(instagramUserId))) {
+      igClauses.push({ instagram_user_id: Number(instagramUserId) });
+    }
+    const list = await automations.find({
+      $or: igClauses,
+      enabled: { $in: [true, 1, '1', 'true'] }
+    }).sort({ created_at: -1 }).toArray();
+
     return list.map((a) => ({
       id: a.id || a._id.toString(),
       owner_user_id: a.owner_user_id,

@@ -641,7 +641,16 @@ app.patch('/api/automations/:id', requireAuth, async (request, response, next) =
 app.delete('/api/automations/:id', requireAuth, async (request, response, next) => {
   try {
     const automationId = request.params.id;
-    await db.run('DELETE FROM automations WHERE id = ? AND owner_user_id = ?', [automationId, request.user.id]);
+    if (db.collections) {
+      const { ObjectId } = require('mongodb');
+      const clauses = [{ id: String(automationId) }];
+      if (/^[a-f0-9]{24}$/i.test(String(automationId))) {
+        try { clauses.push({ _id: new ObjectId(String(automationId)) }); } catch (_) {}
+      }
+      await db.collections().automations.deleteMany({ $or: clauses });
+    } else {
+      await db.run('DELETE FROM automations WHERE id = ? AND owner_user_id = ?', [automationId, request.user.id]);
+    }
     return response.status(200).json({ success: true, message: 'Automation deleted successfully.' });
   } catch (error) {
     return next(error);
@@ -673,12 +682,16 @@ app.get('/api/instagram/webhook', (request, response) => {
 });
 
 function keywordMatches(commentText, keyword, triggerType) {
-  if (triggerType === 'all') return true;
+  if (triggerType === 'all' || triggerType === 'any') return true;
   if (!commentText) return false;
   if (!keyword || keyword.trim() === '*' || keyword.trim().toLowerCase() === 'all') return true;
   const cleanComment = commentText.toLowerCase().trim();
-  const cleanKeyword = keyword.toLowerCase().trim();
-  return cleanComment.includes(cleanKeyword);
+  const keywords = String(keyword)
+    .split(',')
+    .map(k => k.toLowerCase().trim())
+    .filter(Boolean);
+  if (keywords.length === 0) return true;
+  return keywords.some(kw => cleanComment.includes(kw));
 }
 
 app.post('/api/instagram/webhook', async (request, response) => {
@@ -687,6 +700,7 @@ app.post('/api/instagram/webhook', async (request, response) => {
   try {
     if (request.billingBlocked) return;
     const payload = request.body;
+    console.log('Incoming Meta Webhook received:', JSON.stringify(payload));
     if (!payload || payload.object !== 'instagram' || !Array.isArray(payload.entry)) {
       return;
     }
@@ -707,6 +721,7 @@ app.post('/api/instagram/webhook', async (request, response) => {
         // Duplicate prevention
         const existingEvent = await db.get('SELECT event_id FROM webhook_events WHERE event_id = ?', [commentId]);
         if (existingEvent) {
+          console.log(`Skipping duplicate comment event ${commentId}`);
           continue;
         }
 
@@ -720,20 +735,29 @@ app.post('/api/instagram/webhook', async (request, response) => {
           [recipientIgUserId]
         );
 
-        if (!automations || automations.length === 0) {
+        let activeAutomations = automations || [];
+        if (activeAutomations.length === 0 && db.collections) {
+          activeAutomations = await db.collections().automations.find({ enabled: { $in: [true, 1, '1'] } }).toArray();
+        }
+
+        if (activeAutomations.length === 0) {
+          console.log(`No active automations found for Instagram account ${recipientIgUserId}`);
           continue;
         }
 
         const commentMediaId = String(commentVal.media?.id || commentVal.media_id || commentVal.mediaId || '');
 
-        for (const auto of automations) {
+        for (const auto of activeAutomations) {
           // If automation is specific to one reel, check media ID
-          if (auto.media_id && commentMediaId && String(auto.media_id) !== commentMediaId) {
-            continue;
+          if (auto.media_id && commentMediaId) {
+            const autoMediaIdStr = String(auto.media_id);
+            if (!commentMediaId.includes(autoMediaIdStr) && !autoMediaIdStr.includes(commentMediaId)) {
+              continue;
+            }
           }
 
           if (keywordMatches(commentText, auto.keyword, auto.trigger_type)) {
-            console.log(`Matched automation ${auto.id} for comment ${commentId}. Sending replies...`);
+            console.log(`Matched automation ${auto.id} for comment "${commentText}" (ID: ${commentId}). Sending replies...`);
             try {
               const tokenData = await instagramService.getDecryptedTokenByInstagramUserId(recipientIgUserId, auto.owner_user_id);
 

@@ -240,11 +240,18 @@ async function resolveReelUrl(ownerUserId, instagramUserId, reelUrl) {
 }
 
 async function disconnect(userId, instagramUserId) {
-  const result = await db.run('DELETE FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [userId, instagramUserId]);
-  if (!result.changes) {
-    const error = new Error('Instagram account not found.');
-    error.statusCode = 404;
-    throw error;
+  if (db.collections) {
+    const { instagramAccounts } = db.collections();
+    const ids = [String(instagramUserId)];
+    if (!isNaN(Number(instagramUserId))) ids.push(Number(instagramUserId));
+    await instagramAccounts.deleteMany({
+      $or: [
+        { instagram_user_id: { $in: ids }, owner_user_id: String(userId) },
+        { instagram_user_id: { $in: ids } }
+      ]
+    });
+  } else {
+    await db.run('DELETE FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [userId, instagramUserId]);
   }
   reelsCache.delete(`${userId}:${instagramUserId}`);
 }
@@ -292,11 +299,23 @@ async function getDecryptedTokenByInstagramUserId(instagramUserId, ownerUserId) 
   if (ownerUserId) {
     account = await db.getInstagramAccount(ownerUserId, instagramUserId);
   }
-  if (!account) {
-    account = await db.collections().instagramAccounts.findOne(
-      { instagram_user_id: instagramUserId },
+  if (!account && db.collections) {
+    const { instagramAccounts } = db.collections();
+    const ids = [String(instagramUserId)];
+    if (!isNaN(Number(instagramUserId))) ids.push(Number(instagramUserId));
+
+    account = await instagramAccounts.findOne(
+      { instagram_user_id: { $in: ids } },
       { sort: { expires_at: -1 } }
     );
+
+    // Fallback: If not found by ID alone, find any active account for this owner
+    if (!account && ownerUserId) {
+      account = await instagramAccounts.findOne(
+        { owner_user_id: String(ownerUserId) },
+        { sort: { expires_at: -1 } }
+      );
+    }
   }
   if (!account) {
     const error = new Error(`Connected Instagram account ${instagramUserId} not found.`);

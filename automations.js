@@ -537,6 +537,10 @@
             headers: window.getAuthHeaders(),
             credentials: 'same-origin'
           });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || 'Failed to delete');
+          }
 
           // Immediately remove from memory array
           userAutomations = userAutomations.filter(a => String(a.id) !== String(auto.id));
