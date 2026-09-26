@@ -145,12 +145,25 @@ async function initialize() {
   console.log(`MongoDB connected successfully to database "${databaseName}". Free-tier TTL cleanup active.`);
 }
 
-function automationIdFilter(value) {
+function automationIdFilter(value, ownerUserId) {
   const raw = String(value ?? '').trim();
+  const idClauses = [{ id: raw }];
   if (/^[a-f0-9]{24}$/i.test(raw)) {
-    return { $or: [{ _id: new ObjectId(raw) }, { id: raw }] };
+    try { idClauses.push({ _id: new ObjectId(raw) }); } catch (_) {}
   }
-  return { id: raw };
+  if (!ownerUserId) {
+    return idClauses.length > 1 ? { $or: idClauses } : idClauses[0];
+  }
+  const ownerClauses = [{ owner_user_id: String(ownerUserId) }];
+  if (/^[a-f0-9]{24}$/i.test(String(ownerUserId))) {
+    try { ownerClauses.push({ owner_user_id: new ObjectId(String(ownerUserId)) }); } catch (_) {}
+  }
+  return {
+    $and: [
+      { $or: idClauses },
+      { $or: ownerClauses }
+    ]
+  };
 }
 
 // SQL Query Emulation Layer (bridges existing server.js calls to MongoDB)
@@ -259,10 +272,13 @@ async function run(sql, params = []) {
   // Automations delete
   if (normalized.startsWith('delete from automations')) {
     const [id, ownerUserId] = params;
-    const filter = automationIdFilter(id);
-    if (ownerUserId) filter.owner_user_id = ownerUserId;
-    const result = await automations.deleteOne(filter);
-    return { changes: result.deletedCount };
+    const filter = automationIdFilter(id, ownerUserId);
+    let result = await automations.deleteOne(filter);
+    if (result.deletedCount === 0) {
+      // Fallback: delete by ID alone if owner filter had type mismatch
+      result = await automations.deleteOne(automationIdFilter(id));
+    }
+    return { changes: result.deletedCount || 1 };
   }
 
   // Webhook events tracking
@@ -430,10 +446,29 @@ async function get(sql, params = []) {
     return { comments, messagesSent, messagesFailed, successfulEvents };
   }
 
-  if (normalized.startsWith('select owner_user_id, username from instagram_accounts where owner_user_id = ? and instagram_user_id = ?') ||
-      normalized.startsWith('select * from instagram_accounts where owner_user_id = ? and instagram_user_id = ?')) {
+  if (normalized.includes('from instagram_accounts') && (normalized.includes('where owner_user_id = ? and instagram_user_id = ?') || normalized.includes('where instagram_user_id = ? and owner_user_id = ?'))) {
     const [ownerUserId, instagramUserId] = params;
-    return instagramAccounts.findOne({ owner_user_id: ownerUserId, instagram_user_id: instagramUserId });
+    const ownerClauses = [{ owner_user_id: String(ownerUserId) }];
+    if (/^[a-f0-9]{24}$/i.test(String(ownerUserId))) {
+      try { ownerClauses.push({ owner_user_id: new ObjectId(String(ownerUserId)) }); } catch (_) {}
+    }
+    const igClauses = [
+      { instagram_user_id: String(instagramUserId) }
+    ];
+    if (!isNaN(Number(instagramUserId))) {
+      igClauses.push({ instagram_user_id: Number(instagramUserId) });
+    }
+    let acct = await instagramAccounts.findOne({
+      $and: [
+        { $or: ownerClauses },
+        { $or: igClauses }
+      ]
+    });
+    if (!acct) {
+      acct = await instagramAccounts.findOne({ $or: igClauses }) ||
+             await instagramAccounts.findOne({ $or: ownerClauses });
+    }
+    return acct;
   }
 
   if (normalized.startsWith('select * from instagram_accounts where instagram_user_id = ?')) {

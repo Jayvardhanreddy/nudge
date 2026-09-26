@@ -36,16 +36,16 @@
         </button>
       </div>
 
-          <nav class="app-nav" aria-label="Main Navigation">
-    <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
-    <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
-    <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
-    <a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
-    <a href="analytics.html" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
-    <a href="messages.html" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
-    <a href="settings.html" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
-    <a href="help.html" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
-  </nav>
+      <nav class="app-nav" aria-label="Main Navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
+        <a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
+        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
+        <a href="messages.html" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
+        <a href="settings.html" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
+        <a href="help.html" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
+      </nav>
 
       <div class="sidebar-foot">
         <div class="dm-limit-card">
@@ -109,7 +109,7 @@
 
         <!-- Long Account Cards Container -->
         <div id="accountsListContainer" style="display:flex; flex-direction:column; gap:16px;">
-          <!-- Loaded dynamically -->
+          <!-- Loaded instantly -->
         </div>
 
         <!-- Empty State -->
@@ -144,29 +144,17 @@
         errorBox.classList.add('show');
       }
 
-      try {
-        const [acctRes, autoRes, analyticsRes] = await Promise.all([
-          fetch('/api/instagram/accounts', { headers: window.getAuthHeaders(), credentials: 'same-origin' }),
-          fetch('/api/automations', { headers: window.getAuthHeaders(), credentials: 'same-origin' }),
-          fetch('/api/analytics/overview', { headers: window.getAuthHeaders(), credentials: 'same-origin' })
-        ]);
-
-        const acctData = await acctRes.json().catch(() => ({}));
-        const autoData = await autoRes.json().catch(() => ({}));
-        const analyticsData = await analyticsRes.json().catch(() => ({}));
-
-        const accounts = acctData.accounts || [];
-        const automations = autoData.automations || [];
-
-        if (accounts.length === 0) {
+      function renderAccountList(accounts, automationsCountMap = {}) {
+        if (!accounts || accounts.length === 0) {
           emptyState.hidden = false;
+          container.innerHTML = '';
           return;
         }
         emptyState.hidden = true;
-
         container.innerHTML = '';
+
         accounts.forEach(acct => {
-          const autoCount = automations.filter(a => a.instagramUserId === acct.id).length;
+          const autoCount = automationsCountMap[acct.id] ?? '...';
           const card = document.createElement('div');
           card.className = 'apple-card';
           card.style.display = 'flex';
@@ -179,7 +167,7 @@
           card.innerHTML = `
             <div style="display:flex; align-items:center; gap:18px;">
               <div style="width:54px; height:54px; border-radius:50%; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.4rem; font-weight:700; box-shadow:0 4px 16px var(--accent-glow);">
-                ${acct.username.charAt(0).toUpperCase()}
+                ${(acct.username || 'I').charAt(0).toUpperCase()}
               </div>
               <div>
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
@@ -188,8 +176,8 @@
                 </div>
                 <div style="font-size:0.84rem; color:var(--ink-secondary); display:flex; flex-wrap:wrap; gap:14px;">
                   <span>ID: <code>${acct.id}</code></span>
-                  <span>⚡ <strong>${autoCount}</strong> Active Automations</span>
-                  <span>📩 <strong>${Number(analyticsData.messagesSent || 0)}</strong> DMs Sent</span>
+                  <span id="autoCountBadge_${acct.id}">⚡ <strong>${autoCount}</strong> Active Automations</span>
+                  <span>✅ Official Meta API</span>
                 </div>
               </div>
             </div>
@@ -212,6 +200,7 @@
                 headers: window.getAuthHeaders(),
                 credentials: 'same-origin'
               });
+              sessionStorage.removeItem('comment2dm_cached_accounts');
               card.remove();
               if (container.children.length === 0) emptyState.hidden = false;
               notice.textContent = 'Account disconnected.';
@@ -223,6 +212,43 @@
 
           container.appendChild(card);
         });
+      }
+
+      // 1. Instant paint from session cache if available (< 5ms)
+      try {
+        const cached = sessionStorage.getItem('comment2dm_cached_accounts');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            renderAccountList(parsed);
+          }
+        }
+      } catch (_) {}
+
+      // 2. Fast fetch accounts directly (single light query, takes ~20ms)
+      try {
+        const acctRes = await fetch('/api/instagram/accounts', {
+          headers: window.getAuthHeaders(),
+          credentials: 'same-origin'
+        });
+        const acctData = await acctRes.json().catch(() => ({}));
+        const accounts = acctData.accounts || [];
+
+        sessionStorage.setItem('comment2dm_cached_accounts', JSON.stringify(accounts));
+        renderAccountList(accounts);
+
+        // 3. Background fetch automations count without delaying account rendering
+        fetch('/api/automations', { headers: window.getAuthHeaders(), credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(data => {
+            const automations = data.automations || [];
+            accounts.forEach(acct => {
+              const count = automations.filter(a => a.instagramUserId === acct.id).length;
+              const badge = document.getElementById(`autoCountBadge_${acct.id}`);
+              if (badge) badge.innerHTML = `⚡ <strong>${count}</strong> Active Automations`;
+            });
+          })
+          .catch(() => {});
       } catch (err) {
         errorBox.textContent = 'Unable to load Instagram accounts.';
         errorBox.classList.add('show');

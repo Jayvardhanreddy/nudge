@@ -516,12 +516,22 @@ app.post('/api/automations', requireAuth, async (request, response, next) => {
       return response.status(400).json({ error: 'Private DM message must not be empty.' });
     }
 
-    const account = await db.get(
-      'SELECT owner_user_id, username FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
-      [request.user.id, targetIgId]
-    );
+    let account = null;
+    if (targetIgId) {
+      account = await db.get(
+        'SELECT owner_user_id, username FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
+        [request.user.id, targetIgId]
+      );
+    }
     if (!account) {
-      return response.status(403).json({ error: 'Instagram account not found or not owned by you.' });
+      const userAccounts = await instagramService.listAccounts(request.user.id);
+      if (userAccounts && userAccounts.length > 0) {
+        account = userAccounts.find(a => a.id === targetIgId) || userAccounts[0];
+        targetIgId = account.id;
+      }
+    }
+    if (!account) {
+      return response.status(403).json({ error: 'No connected Instagram account found. Please connect your Instagram account first.' });
     }
 
     const now = new Date().toISOString();
@@ -632,7 +642,7 @@ app.delete('/api/automations/:id', requireAuth, async (request, response, next) 
   try {
     const automationId = request.params.id;
     await db.run('DELETE FROM automations WHERE id = ? AND owner_user_id = ?', [automationId, request.user.id]);
-    return response.status(204).end();
+    return response.status(200).json({ success: true, message: 'Automation deleted successfully.' });
   } catch (error) {
     return next(error);
   }

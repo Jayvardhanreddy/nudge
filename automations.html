@@ -8,6 +8,43 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    #automationFormCard[hidden] {
+      display: none !important;
+    }
+    .selected-reel-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: var(--radius-m);
+      padding: 12px 16px;
+      margin-top: 12px;
+      transition: all 0.2s ease;
+    }
+    .selected-reel-thumb {
+      width: 54px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      flex-shrink: 0;
+    }
+    .selected-reel-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent-light);
+      font-size: 0.84rem;
+      text-decoration: none;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+    .selected-reel-link:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body class="app-body" data-page="automations">
 
@@ -39,16 +76,16 @@
       </div>
 
       <!-- App Navigation -->
-          <nav class="app-nav" aria-label="Main Navigation">
-    <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
-    <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
-    <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
-    <a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
-    <a href="analytics.html" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
-    <a href="messages.html" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
-    <a href="settings.html" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
-    <a href="help.html" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
-  </nav>
+      <nav class="app-nav" aria-label="Main Navigation">
+        <a href="dashboard.html" data-nav="dashboard"><span class="nav-icon">🏠</span><span>Home</span></a>
+        <a href="instagram-accounts.html" data-nav="instagram"><span class="nav-icon">📸</span><span>Instagram Accounts</span></a>
+        <a href="automations.html" data-nav="automations"><span class="nav-icon">⚙️</span><span>Automations</span></a>
+        <a href="creator-tools.html" data-nav="creator-tools"><span class="nav-icon">✨</span><span>Creator Studio AI</span></a>
+        <a href="analytics.html" data-nav="analytics"><span class="nav-icon">📊</span><span>Analytics</span></a>
+        <a href="messages.html" data-nav="messages"><span class="nav-icon">💌</span><span>DM Log</span></a>
+        <a href="settings.html" data-nav="settings"><span class="nav-icon">👤</span><span>Settings</span></a>
+        <a href="help.html" data-nav="help"><span class="nav-icon">💬</span><span>Help Desk</span></a>
+      </nav>
 
       <!-- Sidebar Footer: DM Limit Bar & Mini-Pie Gauge -->
       <div class="sidebar-foot">
@@ -139,18 +176,18 @@
         </div>
 
         <!-- MULTI-STEP CREATION FORM + LIVE PHONE SIMULATOR -->
-        <section id="automationFormCard" style="display:none;">
+        <section id="automationFormCard" class="apple-card" style="margin-bottom:32px; padding:28px;" hidden>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--glass-border);">
             <div>
               <h2 style="font-size:1.3rem; margin-bottom:2px;" id="formHeadingTitle">Create Automation</h2>
-              <p style="color:var(--ink-secondary); font-size:0.86rem;">Select your account, choose a Reel or trigger on all, and draft your DM.</p>
+              <p style="color:var(--ink-secondary); font-size:0.86rem;">Select a Reel or post, set your comment trigger, and draft your automated DM.</p>
             </div>
             <button type="button" class="btn btn-ghost btn-sm" id="cancelFormBtn">✕ Close</button>
           </div>
 
           <div class="builder-layout">
             <!-- Left Column: Form Controls -->
-            <form id="automationForm" novalidate>
+            <form id="automationForm" autocomplete="off" novalidate>
               <input type="hidden" id="automationId" value="" />
               <input type="hidden" id="selectedMediaId" value="" />
               <input type="hidden" id="selectedMediaUrl" value="" />
@@ -161,66 +198,90 @@
                 <select id="automationAccountSelect" class="form-select" required></select>
               </div>
 
-              <!-- Step 2: Target Reel / Post Picker -->
+              <!-- Step 2: Target Reel / Post Picker (Prominent & Visual) -->
               <div class="form-group">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <label class="form-label" style="margin-bottom:0;">2. Target Reel or Post</label>
-                  <button type="button" class="btn btn-ghost btn-sm" id="refreshReelsBtn" style="font-size:0.75rem; padding:3px 8px;">Refresh Reels ↻</button>
+                  <label class="form-label" style="margin-bottom:0;">2. Select Instagram Reel or Post</label>
+                  <button type="button" class="btn btn-ghost btn-sm" id="refreshReelsBtn" style="font-size:0.75rem; padding:3px 10px;">Refresh Reels ↻</button>
                 </div>
 
                 <div style="display:flex; gap:10px; margin-bottom:12px;">
-                  <button type="button" class="btn btn-ghost btn-sm active" id="targetAllReelsBtn" style="border-color:var(--accent);">
-                    <span>🎬 All Reels & Posts</span>
+                  <button type="button" class="btn btn-ghost btn-sm active" id="targetSpecificReelBtn" style="border-color:var(--accent);">
+                    <span>🎯 Specific Reel / Post</span>
                   </button>
-                  <button type="button" class="btn btn-ghost btn-sm" id="targetSpecificReelBtn">
-                    <span>🎯 Specific Reel</span>
+                  <button type="button" class="btn btn-ghost btn-sm" id="targetAllReelsBtn">
+                    <span>🎬 All Reels & Posts</span>
                   </button>
                 </div>
 
-                <!-- Reel Visual Picker Box (Shown when Specific Reel is toggled) -->
-                <div id="reelPickerBox" style="display:none; background:rgba(0,0,0,0.25); border-radius:var(--radius-m); padding:12px; border:1px solid var(--glass-border); margin-bottom:8px;">
+                <!-- Reel Visual Picker Box -->
+                <div id="reelPickerBox" style="background:rgba(0,0,0,0.3); border-radius:var(--radius-m); padding:14px; border:1px solid var(--glass-border); margin-bottom:12px;">
+                  <div style="font-size:0.82rem; color:var(--ink-muted); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Click on a Reel or Post below to link this automation:</span>
+                    <span id="reelsCountLabel" style="font-size:0.78rem;"></span>
+                  </div>
+
                   <div class="reel-picker-grid" id="reelPickerGrid">
-                    <!-- Loaded dynamically -->
+                    <!-- Populated dynamically -->
                     <div style="text-align:center; padding:24px; color:var(--ink-muted); grid-column:1/-1;">Loading reels from Instagram…</div>
                   </div>
-                  <div id="selectedReelPreview" style="font-size:0.8rem; color:var(--accent-light); margin-top:8px; display:none;">
-                    Selected: <span id="selectedReelText"></span>
+
+                  <!-- Selected Reel Showcase Box -->
+                  <div id="selectedReelPreview" class="selected-reel-card" style="display:none;">
+                    <img id="selectedReelThumb" src="" class="selected-reel-thumb" alt="Selected Reel" />
+                    <div style="flex:1; min-width:0;">
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="plan-badge pro" style="font-size:0.7rem; padding:2px 8px;">✓ Linked Reel</span>
+                        <code id="selectedReelIdTag" style="font-size:0.75rem; color:var(--ink-muted);"></code>
+                      </div>
+                      <div id="selectedReelCaption" style="font-size:0.88rem; color:#fff; font-weight:600; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+                      <a id="selectedReelPermalink" href="#" target="_blank" rel="noopener" class="selected-reel-link">
+                        <span>🔗 View on Instagram ↗</span>
+                      </a>
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-xs" id="clearReelSelectionBtn" style="color:var(--rose); align-self:flex-start;">✕ Remove</button>
                   </div>
                 </div>
               </div>
 
               <!-- Step 3: Trigger Condition -->
               <div class="form-group">
-                <label class="form-label">3. Trigger Condition</label>
-                <div style="display:flex; gap:12px; margin-bottom:12px;">
+                <label class="form-label">3. When to Trigger</label>
+                <div style="display:flex; gap:16px; margin-bottom:12px; flex-wrap:wrap;">
                   <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
                     <input type="radio" name="triggerTypeRadio" id="triggerKeywordRadio" value="keyword" checked />
-                    <span>Specific Keyword</span>
+                    <span>Specific Keyword(s)</span>
                   </label>
                   <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
                     <input type="radio" name="triggerTypeRadio" id="triggerAllRadio" value="all" />
-                    <span>Any Comment (Emoji or Text) <span class="plan-badge pro" style="font-size:0.65rem;">Pro</span></span>
+                    <span>Any Comment (All Comments) <span class="plan-badge pro" style="font-size:0.65rem;">Pro</span></span>
                   </label>
                 </div>
 
                 <div id="keywordInputGroup">
-                  <input type="text" id="automationKeywordInput" class="form-input" placeholder="e.g. LINK, PDF, PRICE" required />
-                  <small style="color:var(--ink-muted); display:block; margin-top:4px;">When a viewer's comment includes this word, the automation triggers instantly.</small>
+                  <input type="text" id="automationKeywordInput" class="form-input" placeholder="e.g. LINK, PRICE, PDF, SEND" required />
+                  <small style="color:var(--ink-muted); display:block; margin-top:4px;">
+                    Separate multiple trigger words with commas. The automation triggers if the viewer's comment includes any of them.
+                  </small>
                 </div>
               </div>
 
               <!-- Step 4: Private DM Message -->
               <div class="form-group">
-                <label class="form-label" for="automationDmMessageInput">4. Private Reply (Direct Message)</label>
+                <label class="form-label" for="automationDmMessageInput">4. Automated Direct Message (Inbox)</label>
                 <textarea id="automationDmMessageInput" class="form-textarea" rows="3" placeholder="Hey! Thanks for commenting. Here is your direct link: https://yourbrand.com/deal 🔥" required></textarea>
-                <small style="color:var(--ink-muted); display:block; margin-top:4px;">Sent directly to the commenter's Instagram inbox.</small>
+                <small style="color:var(--ink-muted); display:block; margin-top:4px;">
+                  Sent instantly to the commenter's Instagram DM inbox. Links are fully clickable!
+                </small>
               </div>
 
               <!-- Step 5: Public Comment Reply (In-thread) -->
               <div class="form-group">
-                <label class="form-label" for="automationPublicReplyInput">5. Public Reply in Comment Thread</label>
+                <label class="form-label" for="automationPublicReplyInput">5. Public Reply in Comment Box (Optional)</label>
                 <input type="text" id="automationPublicReplyInput" class="form-input" placeholder="Sent to your DM! Check inbox 📩" />
-                <small style="color:var(--ink-muted); display:block; margin-top:4px;">Leaves a public reply in the reel comment thread confirming the DM was sent.</small>
+                <small style="color:var(--ink-muted); display:block; margin-top:4px;">
+                  Leaves a public reply in the comment section confirming the DM was sent.
+                </small>
               </div>
 
               <!-- Enabled Toggle -->
@@ -231,9 +292,9 @@
                 </label>
               </div>
 
-              <div style="display:flex; gap:12px;">
-                <button type="submit" class="btn btn-accent" id="saveAutomationBtn" style="min-width:160px;">
-                  <span>Save Automation</span>
+              <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <button type="submit" class="btn btn-accent" id="saveAutomationBtn" style="min-width:180px;">
+                  <span>Save & Launch Automation ⚡</span>
                 </button>
                 <button type="button" class="btn btn-ghost" id="cancelFormBtn2">Cancel</button>
               </div>
@@ -246,7 +307,7 @@
                 <div class="iphone-notch"></div>
                 <div class="simulator-screen">
                   <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:0.75rem; color:var(--ink-muted);">
-                    <span>Instagram Reel</span>
+                    <span id="simReelHeader">Instagram Reel</span>
                     <span style="color:var(--emerald);">● Live</span>
                   </div>
 
