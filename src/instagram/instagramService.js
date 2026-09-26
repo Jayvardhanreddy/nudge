@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const db = require('../db');
 
-const apiVersion = process.env.META_API_VERSION || 'v25.0';
+const apiVersion = process.env.META_API_VERSION || 'v21.0';
 const requiredConfig = ['META_APP_ID', 'META_APP_SECRET', 'META_REDIRECT_URI', 'META_TOKEN_ENCRYPTION_KEY'];
 
 // 5-minute cache for media/reels to prevent lag and Meta rate limits
@@ -336,35 +336,54 @@ async function getDecryptedTokenByInstagramUserId(instagramUserId, ownerUserId) 
 
 // 1. Send Private DM Reply to Commenter
 async function sendPrivateReply(instagramUserId, commentId, messageText, accessToken) {
-  const url = `https://graph.instagram.com/${apiVersion}/${instagramUserId}/messages`;
   const bodyData = { recipient: { comment_id: commentId }, message: { text: messageText } };
-  let response = await fetch(url, {
+  
+  // Attempt 1: graph.instagram.com with user ID
+  const url1 = `https://graph.instagram.com/${apiVersion}/${instagramUserId}/messages`;
+  let response = await fetch(url1, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(bodyData)
   });
   let data = await response.json().catch(() => ({}));
-
-  if (!response.ok && (response.status === 404 || data.error?.code === 100 || data.error?.type === 'OAuthException')) {
-    const fallbackUrl = `https://graph.facebook.com/${apiVersion}/${instagramUserId}/messages`;
-    const fallbackResponse = await fetch(fallbackUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify(bodyData)
-    });
-    const fallbackData = await fallbackResponse.json().catch(() => ({}));
-    if (fallbackResponse.ok && (fallbackData.message_id || fallbackData.id)) return fallbackData;
-    if (!fallbackResponse.ok) { data = fallbackData; response = fallbackResponse; }
+  if (response.ok && (data.message_id || data.id)) {
+    console.log(`Private DM sent successfully via graph.instagram.com to comment ${commentId}`);
+    return data;
   }
 
-  if (!response.ok || (data.error && !data.message_id && !data.id)) {
-    const error = new Error(`Instagram DM Error: ${metaErrorMessage(data, 'Instagram API call failed.')}`);
-    error.statusCode = response.status || 502;
-    error.metaError = data.error;
-    throw error;
+  // Attempt 2: graph.facebook.com fallback
+  console.warn(`Attempt 1 failed (HTTP ${response.status}): ${metaErrorMessage(data, 'Trying Facebook Graph fallback...')}`);
+  const url2 = `https://graph.facebook.com/${apiVersion}/${instagramUserId}/messages`;
+  const response2 = await fetch(url2, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(bodyData)
+  });
+  const data2 = await response2.json().catch(() => ({}));
+  if (response2.ok && (data2.message_id || data2.id)) {
+    console.log(`Private DM sent successfully via graph.facebook.com to comment ${commentId}`);
+    return data2;
   }
 
-  return data;
+  // Attempt 3: graph.instagram.com/me/messages fallback
+  console.warn(`Attempt 2 failed (HTTP ${response2.status}): ${metaErrorMessage(data2, 'Trying /me/messages fallback...')}`);
+  const url3 = `https://graph.instagram.com/${apiVersion}/me/messages`;
+  const response3 = await fetch(url3, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(bodyData)
+  });
+  const data3 = await response3.json().catch(() => ({}));
+  if (response3.ok && (data3.message_id || data3.id)) {
+    console.log(`Private DM sent successfully via /me/messages to comment ${commentId}`);
+    return data3;
+  }
+
+  const finalError = data3.error || data2.error || data.error;
+  const error = new Error(`Instagram DM Error: ${metaErrorMessage({ error: finalError }, 'All DM endpoints failed.')}`);
+  error.statusCode = response3.status || response2.status || response.status || 502;
+  error.metaError = finalError;
+  throw error;
 }
 
 // 2. Send Public Reply in the Comment Thread ("Sent to your DM! Check inbox 📩")

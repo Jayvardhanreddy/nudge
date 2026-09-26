@@ -1027,21 +1027,105 @@ app.get('/api/analytics/events', requireAuth, async (request, response) => {
     const status = request.query.status || 'all';
     const days = parseInt(request.query.days) || 7;
     const search = request.query.search || '';
-    const col = db.collections ? db.collections().automation_events : null;
+    const col = db.collections ? (db.collections().automationEvents || db.collections().automation_events) : null;
     if (!col) return response.json({ events: [], total: 0, sent: 0, failed: 0, pending: 0, pages: 1 });
-    const since = new Date(Date.now() - days * 86400000);
-    const filter = { user_id: request.user.id, created_at: { $gte: since } };
-    if (status !== 'all') filter.status = status;
-    if (search) filter.$or = [{ senderName: { $regex: search, $options: 'i' } }, { commentText: { $regex: search, $options: 'i' } }];
-    const [events, total, sent, failed, pending] = await Promise.all([
+
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const filter = {
+      $or: [
+        { owner_user_id: String(request.user.id) },
+        { owner_user_id: request.user.id }
+      ],
+      created_at: { $gte: since }
+    };
+    if (status !== 'all') {
+      filter.status = status === 'sent' ? 'success' : status;
+    }
+    if (search) {
+      filter.$or = [
+        { message_text: { $regex: search, $options: 'i' } },
+        { keyword: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const [events, total, sent, failed] = await Promise.all([
       col.find(filter).sort({ created_at: -1 }).skip((page - 1) * limit).limit(limit).toArray(),
       col.countDocuments(filter),
-      col.countDocuments({ ...filter, status: 'sent' }),
-      col.countDocuments({ ...filter, status: 'failed' }),
-      col.countDocuments({ ...filter, status: 'pending' })
+      col.countDocuments({ ...filter, status: 'success' }),
+      col.countDocuments({ ...filter, status: 'failed' })
     ]);
-    return response.json({ events, total, sent, failed, pending, pages: Math.max(1, Math.ceil(total / limit)) });
-  } catch (err) { return response.status(500).json({ error: err.message }); }
+
+    const mappedEvents = events.map(e => ({
+      id: e.event_id || e._id,
+      senderName: e.instagram_user_id ? `@${e.instagram_user_id}` : 'Commenter',
+      commentText: e.keyword ? `Keyword: "${e.keyword}"` : 'Comment',
+      dmPreview: e.message_text || '–',
+      automationName: 'Automation',
+      status: e.status === 'success' ? 'sent' : e.status,
+      timestamp: e.created_at
+    }));
+
+    return response.json({
+      events: mappedEvents,
+      total,
+      sent,
+      failed,
+      pending: 0,
+      pages: Math.max(1, Math.ceil(total / limit))
+    });
+  } catch (err) {
+    return response.status(500).json({ error: err.message });
+  }
+});
+
+// ── Live Debug Status for User & Webhook Verification ────────────────────────
+app.get('/api/instagram/debug-status', requireAuth, async (request, response) => {
+  try {
+    const ownerId = request.user.id;
+    const { automations, instagramAccounts, webhookEvents, automationEvents } = db.collections();
+
+    const [accounts, userAutomations, recentWebhooks, recentEvents] = await Promise.all([
+      instagramAccounts.find({
+        $or: [{ owner_user_id: String(ownerId) }, { owner_user_id: ownerId }]
+      }).toArray(),
+      automations.find({
+        $or: [{ owner_user_id: String(ownerId) }, { owner_user_id: ownerId }]
+      }).toArray(),
+      webhookEvents.find({}).sort({ processed_at: -1 }).limit(10).toArray(),
+      automationEvents.find({
+        $or: [{ owner_user_id: String(ownerId) }, { owner_user_id: ownerId }]
+      }).sort({ created_at: -1 }).limit(15).toArray()
+    ]);
+
+    return response.json({
+      serverTime: new Date().toISOString(),
+      user: { id: ownerId, email: request.user.email },
+      accountsCount: accounts.length,
+      accounts: accounts.map(a => ({
+        username: a.username,
+        instagramUserId: a.instagram_user_id,
+        connectedAt: a.connected_at,
+        tokenValid: a.expires_at > Date.now(),
+        tokenExpiresInDays: Math.round((a.expires_at - Date.now()) / (86400 * 1000))
+      })),
+      automationsCount: userAutomations.length,
+      automations: userAutomations.map(a => ({
+        id: a.id || a._id,
+        keyword: a.keyword,
+        triggerType: a.trigger_type,
+        enabled: a.enabled,
+        mediaId: a.media_id,
+        instagramUserId: a.instagram_user_id,
+        dmSnippet: (a.dm_message || '').slice(0, 40)
+      })),
+      recentWebhookEventsCount: recentWebhooks.length,
+      recentWebhooksReceived: recentWebhooks,
+      recentAutomationRepliesCount: recentEvents.length,
+      recentAutomationReplies: recentEvents
+    });
+  } catch (err) {
+    return response.status(500).json({ error: err.message });
+  }
 });
 
 // ── Admin endpoints ─────────────────────────────────────────────────────────
