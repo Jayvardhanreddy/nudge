@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Auth Check
   try {
-    const res = await fetch('/api/auth/me', { headers });
+    const res = await fetch('/api/me', { headers });
     const data = await res.json();
     if (!res.ok || !data.user || !data.user.isAdmin) {
       window.location.href = 'dashboard.html';

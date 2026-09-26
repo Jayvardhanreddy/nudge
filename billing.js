@@ -124,37 +124,38 @@
       return;
     }
     try {
-      const basePrice = isAnnual ? PLANS[plan].annualPrice : PLANS[plan].monthlyPrice;
-      const discountAmount = appliedDiscount > 0 ? (basePrice * (appliedDiscount / 100)) : 0;
-      const finalPrice = Math.max(0, Math.round(basePrice - discountAmount));
+      const planKey = plan + (isAnnual ? '_annual' : '_monthly');
 
-      const res = await fetch('/api/billing/create-order', {
+      const res = await fetch('/api/billing/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(window.getAuthHeaders ? window.getAuthHeaders() : {}) },
-        body: JSON.stringify({ plan, billing: isAnnual ? 'annual' : 'monthly', amount: finalPrice, coupon: appliedCouponCode })
+        body: JSON.stringify({ planKey })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create order');
+      if (!res.ok) throw new Error(data.error || 'Failed to create subscription');
 
       const options = {
         key: data.keyId || 'rzp_test_placeholder',
-        amount: data.amount,
-        currency: data.currency || 'INR',
-        name: 'Comment2DM',
-        description: `${PLANS[plan].name} Plan – ${isAnnual ? 'Annual' : 'Monthly'}` + (appliedDiscount ? ` (${appliedDiscount}% OFF)` : ''),
-        order_id: data.orderId,
-        prefill: { email: userEmail },
+        subscription_id: data.subscriptionId,
+        name: data.name || 'Comment2DM',
+        description: `Upgrade to ${planKey}`,
+        prefill: data.prefill || { email: userEmail },
         theme: { color: '#6366f1' },
         handler: async (response) => {
           try {
-            const verifyRes = await fetch('/api/billing/verify-payment', {
+            const verifyRes = await fetch('/api/billing/verify-subscription', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', ...(window.getAuthHeaders ? window.getAuthHeaders() : {}) },
-              body: JSON.stringify({ razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id, razorpay_signature: response.razorpay_signature, plan })
+              body: JSON.stringify({ 
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_subscription_id: response.razorpay_subscription_id,
+                razorpay_signature: response.razorpay_signature,
+                planKey
+              })
             });
             const vd = await verifyRes.json();
             if (!verifyRes.ok) throw new Error(vd.error || 'Verification failed');
-            showToast(`🎉 Upgraded to ${PLANS[plan].name}! Welcome aboard.`);
+            showToast(`🎉 Upgraded to ${plan}! Welcome aboard.`);
             setTimeout(() => location.reload(), 2000);
           } catch (err) {
             showToast('❌ Payment verification failed: ' + err.message, 'error');

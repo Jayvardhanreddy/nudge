@@ -304,16 +304,9 @@
 
         const saved = data.automation;
         if (saved) {
-          if (id) {
-            userAutomations = userAutomations.map(a => String(a.id) === String(id) ? saved : a);
-          } else {
-            userAutomations.unshift(saved);
-          }
-          renderAutomations();
+          showNotice(id ? 'Automation updated successfully! ⚡' : 'Automation created and active! ⚡');
+          setTimeout(() => window.location.reload(), 500);
         }
-
-        closeBuilder();
-        showNotice(id ? 'Automation updated successfully! ⚡' : 'Automation created and active! ⚡');
       } catch (err) {
         showError('Network error. Unable to save automation.');
       } finally {
@@ -417,9 +410,8 @@
             headers: window.getAuthHeaders(),
             credentials: 'same-origin'
           });
-          userAutomations = userAutomations.filter(a => a.id !== auto.id);
-          renderAutomations();
           showNotice('Automation deleted.');
+          setTimeout(() => window.location.reload(), 500);
         } catch (e) {
           showError('Failed to delete automation.');
         }

@@ -299,7 +299,8 @@ app.get('/api/auth/google/callback', async (request, response) => {
 });
 
 app.get('/api/me', requireAuth, (request, response) => {
-  return response.json({ user: request.user });
+  const isAdmin = request.user && request.user.email && request.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  return response.json({ user: { ...request.user, isAdmin } });
 });
 
 // ==========================================
