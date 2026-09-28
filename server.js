@@ -14,8 +14,19 @@ const billing = require('./src/billing');
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
+const isVercel = !!process.env.VERCEL;
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
+
+// Vercel is kept as a frontend entry point only. Nudge's stateful Express/MongoDB
+// backend runs on Render; redirecting here avoids trying to run the long-lived
+// Render process as a Vercel function and keeps one canonical backend/session host.
+if (isVercel) {
+  app.use((request, response) => {
+    const target = 'https://nudge-dto0.onrender.com' + (request.originalUrl || request.url || '/');
+    return response.redirect(307, target);
+  });
+}
 
 // Enforce HTTPS in production to guarantee secure session cookies
 if (isProduction) {
@@ -1282,12 +1293,16 @@ app.use((error, request, response, next) => {
   });
 });
 
-db.initialize().then(async () => {
-  await billing.ensurePlans();
-  app.listen(port, '0.0.0.0', () => {
-    console.log(`Comment2DM server is live on port ${port} (HTTPS ready)`);
+if (!isVercel) {
+  db.initialize().then(async () => {
+    await billing.ensurePlans();
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`Comment2DM server is live on port ${port} (HTTPS ready)`);
+    });
+  }).catch((error) => {
+    console.error('Database initialization failed:', error);
+    process.exitCode = 1;
   });
-}).catch((error) => {
-  console.error('Database initialization failed:', error);
-  process.exitCode = 1;
-});
+}
+
+module.exports = app;
