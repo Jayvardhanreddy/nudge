@@ -658,7 +658,7 @@ app.delete('/api/automations/:id', requireAuth, async (request, response, next) 
       if (/^[a-f0-9]{24}$/i.test(String(automationId))) {
         try { clauses.push({ _id: new ObjectId(String(automationId)) }); } catch (_) {}
       }
-      await db.collections().automations.deleteMany({ $or: clauses });
+      await db.collections().automations.deleteMany({ owner_user_id: String(request.user.id), $or: clauses });
     } else {
       await db.run('DELETE FROM automations WHERE id = ? AND owner_user_id = ?', [automationId, request.user.id]);
     }
@@ -752,7 +752,7 @@ app.post('/api/instagram/webhook', async (request, response) => {
 
         let activeAutomations = automations || [];
         if (activeAutomations.length === 0 && db.collections) {
-          activeAutomations = await db.collections().automations.find({ enabled: { $in: [true, 1, '1'] } }).toArray();
+          activeAutomations = await db.collections().automations.find({ instagram_user_id: recipientIgUserId, enabled: { $in: [true, 1, '1'] } }).toArray();
         }
 
         if (activeAutomations.length === 0) {
