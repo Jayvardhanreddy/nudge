@@ -1,7 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
-const fs = require('fs').promises;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const databaseName = process.env.MONGODB_DB_NAME || 'nudge';
