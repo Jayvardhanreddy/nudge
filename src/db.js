@@ -27,7 +27,8 @@ function collections() {
     payments: database.collection('payments'),
     billing_plans: database.collection('billing_plans'),
     coupons: database.collection('coupons'),
-    subscriptions: database.collection('subscriptions')
+    subscriptions: database.collection('subscriptions'),
+    aiUsage: database.collection('ai_usage')
   };
 }
 
@@ -115,7 +116,7 @@ async function initialize() {
   database = client.db(databaseName);
   await database.command({ ping: 1 });
 
-  const { users, instagramAccounts, automations, webhookEvents, automationEvents, rateLimits, sessions } = collections();
+  const { users, instagramAccounts, automations, webhookEvents, automationEvents, rateLimits, sessions, aiUsage } = collections();
 
   // Create indexes safely. TTL indexes ensure MongoDB free tier space (512MB) is never exhausted.
   await Promise.allSettled([
@@ -138,7 +139,9 @@ async function initialize() {
     rateLimits.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'rate_limits_ttl' }),
     // Sessions auto-expire:
     sessions.createIndex({ token_hash: 1 }, { unique: true, name: 'sessions_token_unique' }),
-    sessions.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'sessions_expires_ttl' })
+    sessions.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'sessions_expires_ttl' }),
+    aiUsage.createIndex({ key: 1 }, { unique: true, name: 'ai_usage_key_unique' }),
+    aiUsage.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'ai_usage_ttl' })
   ]);
 
   await migrateJsonData().catch((err) => console.warn('JSON migration notice:', err.message));
@@ -288,11 +291,7 @@ async function run(sql, params = []) {
     const [id, ownerUserId] = params;
     const filter = automationIdFilter(id, ownerUserId);
     let result = await automations.deleteOne(filter);
-    if (result.deletedCount === 0) {
-      // Fallback: delete by ID alone if owner filter had type mismatch
-      result = await automations.deleteOne(automationIdFilter(id));
-    }
-    return { changes: result.deletedCount || 1 };
+    return { changes: result.deletedCount };
   }
 
   // Webhook events tracking
@@ -488,10 +487,6 @@ async function get(sql, params = []) {
         { $or: igClauses }
       ]
     });
-    if (!acct) {
-      acct = await instagramAccounts.findOne({ $or: igClauses }) ||
-             await instagramAccounts.findOne({ $or: ownerClauses });
-    }
     return acct;
   }
 
@@ -613,25 +608,41 @@ async function consumeRateLimit(key, windowMs, maxRequests) {
   const now = Date.now();
   const expiresAt = new Date(now + Number(windowMs || 60000));
   const normalizedKey = String(key || '').trim();
+  const limit = Number(maxRequests || 1);
   if (!normalizedKey) return true;
-
-  const existing = await rateLimits.findOne({ key: normalizedKey });
-  if (!existing || new Date(existing.expires_at).getTime() <= now) {
-    await rateLimits.updateOne(
-      { key: normalizedKey },
-      { $set: { key: normalizedKey, count: 1, expires_at: expiresAt } },
-      { upsert: true }
+  try {
+    const result = await rateLimits.findOneAndUpdate(
+      { key: normalizedKey, $or: [{ expires_at: { $lte: new Date(now) } }, { expires_at: { $exists: false } }, { count: { $lt: limit } }] },
+      { $inc: { count: 1 }, $set: { expires_at: expiresAt } },
+      { upsert: true, returnDocument: 'after' }
     );
-    return true;
+    return Boolean(result.value || result);
+  } catch (error) {
+    if (error && error.code === 11000) return false;
+    throw error;
   }
+}
 
-  if (Number(existing.count || 0) >= Number(maxRequests || 1)) return false;
-
-  await rateLimits.updateOne(
-    { key: normalizedKey },
-    { $inc: { count: 1 } }
-  );
-  return true;
+async function consumeAiUsage(userId, limit) {
+  const { aiUsage } = collections();
+  const normalizedUserId = String(userId || '').trim();
+  const max = Number(limit);
+  if (!normalizedUserId || !Number.isFinite(max) || max < 1) return false;
+  const now = new Date();
+  const month = now.toISOString().slice(0, 7);
+  const key = `${normalizedUserId}:${month}`;
+  const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  try {
+    const result = await aiUsage.findOneAndUpdate(
+      { key, count: { $lt: max } },
+      { $inc: { count: 1 }, $set: { user_id: normalizedUserId, month, expires_at: nextMonth } },
+      { upsert: true, returnDocument: 'after' }
+    );
+    return Boolean(result.value || result);
+  } catch (error) {
+    if (error && error.code === 11000) return false;
+    throw error;
+  }
 }
 
 // Sessions
@@ -685,6 +696,7 @@ module.exports = {
   refreshSession,
   deleteSession,
   consumeRateLimit,
+  consumeAiUsage,
   close,
   collections
 };
