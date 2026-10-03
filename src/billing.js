@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const Razorpay = require('razorpay');
 const authService = require('./auth/authService');
@@ -144,22 +143,8 @@ async function store() {
 
 async function auth(req) {
   try {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.slice(7).trim();
-      const user = await authService.getSessionUser(token);
-      if (user) return user;
-    }
-    if (req.cookies?.nudge_session) {
-      const user = await authService.getSessionUser(req.cookies.nudge_session);
-      if (user) return user;
-    }
-    const token = req.cookies?.nudge_token;
-    if (token) {
-      const p = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'], issuer: 'nudge-app', audience: 'nudge-web' });
-      return p?.sub ? await authService.getUserById(p.sub) : null;
-    }
-    return null;
+    const token = req.cookies?.nudge_session || req.cookies?.comment2dm_session;
+    return token ? await authService.getSessionUser(token) : null;
   } catch {
     return null;
   }
@@ -223,7 +208,6 @@ async function check(uid, resource) {
 async function billingRateLimit(req, res, next) {
   try {
     const u = await auth(req);
-    if (u?.email?.toLowerCase() === ADMIN_EMAIL) return next();
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const uid = u?.id || 'anon';
     const key = `billing:${req.path}:${uid}`;
