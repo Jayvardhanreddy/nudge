@@ -28,7 +28,8 @@ function collections() {
     billing_plans: database.collection('billing_plans'),
     coupons: database.collection('coupons'),
     subscriptions: database.collection('subscriptions'),
-    aiUsage: database.collection('ai_usage')
+    aiUsage: database.collection('ai_usage'),
+    passwordResetTokens: database.collection('password_reset_tokens')
   };
 }
 
@@ -116,7 +117,7 @@ async function initialize() {
   database = client.db(databaseName);
   await database.command({ ping: 1 });
 
-  const { users, instagramAccounts, automations, webhookEvents, automationEvents, rateLimits, sessions, aiUsage } = collections();
+  const { users, instagramAccounts, automations, webhookEvents, automationEvents, rateLimits, sessions, aiUsage, passwordResetTokens } = collections();
 
   // Create indexes safely. TTL indexes ensure MongoDB free tier space (512MB) is never exhausted.
   await Promise.allSettled([
@@ -141,7 +142,9 @@ async function initialize() {
     sessions.createIndex({ token_hash: 1 }, { unique: true, name: 'sessions_token_unique' }),
     sessions.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'sessions_expires_ttl' }),
     aiUsage.createIndex({ key: 1 }, { unique: true, name: 'ai_usage_key_unique' }),
-    aiUsage.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'ai_usage_ttl' })
+    aiUsage.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'ai_usage_ttl' }),
+    passwordResetTokens.createIndex({ token_hash: 1 }, { unique: true, name: 'password_reset_token_unique' }),
+    passwordResetTokens.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: 'password_reset_tokens_ttl' })
   ]);
 
   await migrateJsonData().catch((err) => console.warn('JSON migration notice:', err.message));
