@@ -4,6 +4,7 @@
 // ============================================================
 
 (function () {
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let userAccounts = [];
   let userAutomations = [];
   let loadedReels = [];
@@ -453,7 +454,7 @@
       let targetHtml = `<span class="plan-badge free">🎬 All Reels & Posts</span>`;
       if (auto.mediaId || auto.mediaUrl) {
         const link = auto.mediaUrl
-          ? `<a href="${auto.mediaUrl}" target="_blank" rel="noopener" style="color:var(--accent-light); text-decoration:none; margin-left:6px;">View ↗</a>`
+          ? `<a href="${encodeURI(auto.mediaUrl)}" target="_blank" rel="noopener" style="color:var(--accent-light); text-decoration:none; margin-left:6px;">View ↗</a>`
           : '';
         targetHtml = `<span class="plan-badge pro" style="background:rgba(99,102,241,0.12); color:var(--accent-light);">🎯 Specific Reel ${link}</span>`;
       }
@@ -466,12 +467,12 @@
             </div>
             <div>
               <div style="display:flex; align-items:center; gap:8px;">
-                <strong style="color:#fff; font-size:0.95rem;">@${auto.username || 'Instagram'}</strong>
+                <strong style="color:#fff; font-size:0.95rem;">@${escapeHtml(auto.username || 'Instagram')}</strong>
                 ${statusBadge}
                 ${targetHtml}
               </div>
               <div style="font-size:0.8rem; color:var(--ink-muted); margin-top:2px;">
-                Trigger: ${isAll ? '<strong>Any Comment</strong>' : `Keyword <code>"${auto.keyword}"</code>`}
+                Trigger: ${isAll ? '<strong>Any Comment</strong>' : `Keyword <code>"${escapeHtml(auto.keyword)}"</code>`}
               </div>
             </div>
           </div>
