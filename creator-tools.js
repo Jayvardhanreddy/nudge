@@ -1,5 +1,6 @@
 // creator-tools.js — Comment2DM Creator Studio AI
 (function () {
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   'use strict';
 
   let aiCredits = 100;
@@ -100,13 +101,13 @@
         resultEl.innerHTML = hooks.map((hook, i) => `
           <div class="result-card">
             <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:0.05em;">Hook ${i + 1}</span>
-            <div class="result-text" style="margin-top:4px;">${hook.replace(/^\d+\.\s*/, '')}</div>
+            <div class="result-text" style="margin-top:4px;">${escapeHtml(hook.replace(/^\d+\.\s*/, ''))}</div>
             <button class="copy-btn" onclick="navigator.clipboard.writeText(this.closest('.result-card').querySelector('.result-text').textContent).then(()=>{this.textContent='✓ Copied!';setTimeout(()=>this.textContent='📋 Copy',2000)})">📋 Copy</button>
           </div>
         `).join('');
       }
     } catch (err) {
-      if (resultEl) resultEl.innerHTML = `<div style="color:#f43f5e;font-size:0.86rem;padding:12px;">❌ ${err.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div style="color:#f43f5e;font-size:0.86rem;padding:12px;">❌ ${escapeHtml(err.message)}</div>`;
     } finally {
       btn.disabled = false;
       btn.innerHTML = '✨ Generate Hooks';
@@ -135,13 +136,13 @@
       const script = Array.isArray(result) ? result.join('\n') : String(result);
       if (resultEl) {
         resultEl.innerHTML = `<div class="result-card">
-          <div class="result-text">${script}</div>
+          <div class="result-text">${escapeHtml(script)}</div>
           <button class="copy-btn" onclick="navigator.clipboard.writeText(this.closest('.result-card').querySelector('.result-text').textContent).then(()=>{this.textContent='✓ Copied!';setTimeout(()=>this.textContent='📋 Copy',2000)})">📋 Copy</button>
         </div>
         <button onclick="window.location.href='automations.html?dm=${encodeURIComponent(script)}'" style="margin-top:10px;padding:9px 16px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);border-radius:10px;color:#10b981;font-size:0.84rem;font-weight:600;cursor:pointer;">⚡ Apply to Automation</button>`;
       }
     } catch (err) {
-      if (resultEl) resultEl.innerHTML = `<div style="color:#f43f5e;font-size:0.86rem;padding:12px;">❌ ${err.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div style="color:#f43f5e;font-size:0.86rem;padding:12px;">❌ ${escapeHtml(err.message)}</div>`;
     } finally {
       btn.disabled = false;
       btn.innerHTML = '✨ Generate DM Script';
@@ -211,8 +212,8 @@
     historyEl.style.display = 'block';
     list.innerHTML = utmHistory.slice(-5).reverse().map(url => `
       <div class="utm-history-item">
-        <span style="font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80%;">${url}</span>
-        <button onclick="navigator.clipboard.writeText('${url.replace(/'/g, "\\'")}').then(()=>{})" style="background:none;border:none;color:#818cf8;cursor:pointer;font-size:0.75rem;flex-shrink:0;">📋</button>
+        <span style="font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80%;">${escapeHtml(url)}</span>
+        <button onclick="navigator.clipboard.writeText('${escapeHtml(url).replace(/'/g, "\\'")}').then(()=>{})" style="background:none;border:none;color:#818cf8;cursor:pointer;font-size:0.75rem;flex-shrink:0;">📋</button>
       </div>`).join('');
   }
 
@@ -271,15 +272,15 @@
           const hook = typeof idea === 'object' ? (idea.hook || '') : '';
           return `<div class="idea-card">
             <div class="idea-format ${fmt}">${fmtLabels[fmt]}</div>
-            <div class="idea-title">${ideaText.replace(/^\d+\.\s*/, '')}</div>
-            ${hook ? `<div class="idea-hook">"${hook}"</div>` : ''}
+            <div class="idea-title">${escapeHtml(ideaText.replace(/^\d+\.\s*/, ''))}</div>
+            ${hook ? `<div class="idea-hook">"${escapeHtml(hook)}"</div>` : ''}
             <div class="idea-meta">📅 Best day: ${days[i]} · <a href="#" onclick="navigator.clipboard.writeText(this.closest('.idea-card').querySelector('.idea-title').textContent);return false;" style="color:#818cf8;font-size:0.72rem;">📋 Copy idea</a></div>
           </div>`;
         }).join('');
         if (!ideas.length) resultEl.innerHTML = `<div style="color:rgba(255,255,255,0.3);padding:20px;grid-column:1/-1;">No ideas returned. Try again.</div>`;
       }
     } catch (err) {
-      if (resultEl) resultEl.innerHTML = `<div style="color:#f43f5e;font-size:0.86rem;padding:12px;grid-column:1/-1;">❌ ${err.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div style="color:#f43f5e;font-size:0.86rem;padding:12px;grid-column:1/-1;">❌ ${escapeHtml(err.message)}</div>`;
     } finally {
       btn.disabled = false;
       btn.innerHTML = '💡 Generate 7 Ideas';
