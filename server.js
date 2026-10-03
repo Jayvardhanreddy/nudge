@@ -58,7 +58,6 @@ const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'jayvardhanreddy2008@gmail.com')
 async function loginRateLimit(request, response, next) {
   try {
     const email = typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '';
-    if (email === ADMIN_EMAIL) return next();
     const ip = request.ip || request.socket.remoteAddress || 'unknown';
     const allowed = await db.consumeRateLimit(`login:${ip}`, 15 * 60 * 1000, 15);
     if (!allowed) {
@@ -73,7 +72,7 @@ async function loginRateLimit(request, response, next) {
 }
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  process.env.JWT_SECRET = process.env.JWT_SECRET || 'comment2dm_super_secure_jwt_secret_key_minimum_32_chars!';
+  throw new Error('JWT_SECRET must be configured with at least 32 characters. Refusing to start with an insecure fallback.');
 }
 
 app.use(cookieParser());
@@ -86,8 +85,6 @@ billing.registerPostParser(app);
 function requireSameOriginForStateChanges(request, response, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return next();
   if (request.path === '/instagram/webhook' || request.path === '/billing/webhook') return next();
-  if (request.headers.authorization && request.headers.authorization.startsWith('Bearer ')) return next();
-
   const fetchSite = request.get('sec-fetch-site');
   if (fetchSite === 'cross-site') {
     return response.status(403).json({ error: 'Cross-origin request blocked.' });
@@ -157,21 +154,9 @@ async function setAuthCookie(response, user) {
 
 // Dual Session Auth Middleware: checks Bearer header first, then cookies
 async function requireAuth(request, response, next) {
-  // 1. Authorization: Bearer <token>
-  const authHeader = request.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const bearerToken = authHeader.slice(7).trim();
-    try {
-      const user = await authService.getSessionUser(bearerToken);
-      if (user) {
-        request.user = user;
-        request.sessionToken = bearerToken;
-        return next();
-      }
-    } catch (e) {}
-  }
-
-  // 2. Cookie session
+  // Authentication is cookie-only. Tokens must never be supplied by frontend JavaScript.
+  // This prevents localStorage/Bearer-token theft from becoming account takeover.
+  // Cookie session
   const sessionToken = request.cookies.comment2dm_session || request.cookies.nudge_session;
   if (sessionToken) {
     try {
@@ -184,19 +169,6 @@ async function requireAuth(request, response, next) {
     } catch (error) {
       console.error('Session lookup failed:', error.message);
     }
-  }
-
-  // 3. Fallback JWT cookie
-  const token = request.cookies.nudge_token;
-  if (token) {
-    try {
-      const payload = verifyJwt(token);
-      const user = await authService.getUserById(payload.sub);
-      if (user) {
-        request.user = user;
-        return next();
-      }
-    } catch (error) {}
   }
 
   return response.status(401).json({ error: 'Authentication required. Please log in.' });
@@ -222,8 +194,8 @@ app.post('/api/auth/signup', loginRateLimit, async (request, response, next) => 
       email: request.body.email.trim().toLowerCase(),
       password: request.body.password
     });
-    const sessionToken = await setAuthCookie(response, user);
-    return response.status(201).json({ user, sessionToken });
+    await setAuthCookie(response, user);
+    return response.status(201).json({ user });
   } catch (error) {
     return next(error);
   }
@@ -237,8 +209,8 @@ app.post('/api/auth/login', loginRateLimit, async (request, response, next) => {
       request.body.email.trim().toLowerCase(),
       request.body.password
     );
-    const sessionToken = await setAuthCookie(response, user);
-    return response.json({ user, sessionToken });
+    await setAuthCookie(response, user);
+    return response.json({ user });
   } catch (error) {
     return next(error);
   }
@@ -679,19 +651,13 @@ app.get('/api/instagram/webhook', (request, response) => {
 
   const expectedToken = process.env.META_WEBHOOK_VERIFY_TOKEN;
 
-  // Supports configured env token, or standard defaults ('comment2dm_webhook_token', 'nudge_webhook_secret', 'comment2dm')
-  const isValidToken = !expectedToken ||
-                       token === expectedToken ||
-                       token === 'comment2dm_webhook_token' ||
-                       token === 'nudge_webhook_secret' ||
-                       token === 'comment2dm' ||
-                       token === 'nudge';
+  const isValidToken = Boolean(expectedToken) && token === expectedToken;
 
   if (mode === 'subscribe' && isValidToken) {
     console.log('Meta Webhook verified successfully with challenge:', challenge);
     return response.status(200).send(challenge);
   } else {
-    console.warn(`Meta Webhook verification failed. Received token: "${token}", Expected: "${expectedToken || 'comment2dm_webhook_token'}"`);
+    console.warn('Meta Webhook verification failed. Token mismatch or webhook verify token is not configured.');
     return response.status(403).json({ error: 'Verification failed. Token mismatch.' });
   }
 });
@@ -715,7 +681,7 @@ app.post('/api/instagram/webhook', async (request, response) => {
   try {
     if (request.billingBlocked) return;
     const payload = request.body;
-    console.log('Incoming Meta Webhook received:', JSON.stringify(payload));
+    console.log('Incoming Meta Webhook received.');
     if (!payload || payload.object !== 'instagram' || !Array.isArray(payload.entry)) {
       return;
     }
@@ -885,7 +851,12 @@ app.post('/api/creator/generate', requireAuth, async (request, response) => {
   const tone = typeof body.tone === 'string' ? body.tone.trim() : 'High-energy';
   const length = typeof body.length === 'string' ? body.length.trim() : '30s';
 
-  if (!topic) return response.status(400).json({ error: 'Please enter a topic or theme.' });
+  if (!topic || topic.length > 500) return response.status(400).json({ error: 'Please enter a valid topic (1–500 characters).' });
+  if (audience.length > 300 || format.length > 50 || tone.length > 80 || length.length > 30) return response.status(400).json({ error: 'One or more inputs are too long.' });
+
+  const aiLimit = getAiMonthlyLimit(request.user);
+  const quotaGranted = await db.consumeAiUsage(request.user.id, aiLimit);
+  if (!quotaGranted) return response.status(429).json({ error: 'Monthly AI usage limit reached. Please try again next month or upgrade your plan.' });
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -956,6 +927,16 @@ app.post('/api/support/chat', async (request, response) => {
 
 // ── Creator Studio AI ──────────────────────────────────────────────────────
 const GEMINI_KEY = process.env.GEMINI_API_KEY || '';
+const AI_MONTHLY_LIMITS = {
+  free: Number(process.env.AI_MONTHLY_LIMIT_FREE || 30),
+  pro: Number(process.env.AI_MONTHLY_LIMIT_PRO || 150),
+  elite: Number(process.env.AI_MONTHLY_LIMIT_ELITE || 500)
+};
+
+function getAiMonthlyLimit(user) {
+  const plan = String(user?.plan || 'free').toLowerCase();
+  return Math.max(1, AI_MONTHLY_LIMITS[plan] || AI_MONTHLY_LIMITS.free);
+}
 
 async function callGemini(prompt) {
   if (!GEMINI_KEY) return null;
@@ -1000,7 +981,12 @@ function creatorFallback(type, body) {
 
 app.post('/api/creator/generate', requireAuth, async (request, response) => {
   const { type, topic, audience, tone, count, product, cta, niche, week } = request.body || {};
-  if (!type) return response.status(400).json({ error: 'type is required' });
+  if (!['hooks', 'dm_script', 'ideas'].includes(type)) return response.status(400).json({ error: 'Unsupported generation type.' });
+  const inputLengths = [topic, audience, tone, product, cta, niche, week].filter(v => typeof v === 'string').some(v => v.length > 500);
+  if (inputLengths) return response.status(400).json({ error: 'One or more inputs are too long.' });
+  const aiLimit = getAiMonthlyLimit(request.user);
+  const quotaGranted = await db.consumeAiUsage(request.user.id, aiLimit);
+  if (!quotaGranted) return response.status(429).json({ error: 'Monthly AI usage limit reached. Please try again next month or upgrade your plan.' });
   try {
     let result = null;
     if (GEMINI_KEY) {
@@ -1018,7 +1004,8 @@ app.post('/api/creator/generate', requireAuth, async (request, response) => {
     if (!result) result = creatorFallback(type, request.body);
     return response.json({ success: true, result });
   } catch (err) {
-    return response.status(500).json({ error: err.message || 'Generation failed' });
+    console.error('Creator generation failed:', err.message);
+    return response.status(500).json({ error: 'Generation failed. Please try again.' });
   }
 });
 
@@ -1057,10 +1044,14 @@ app.get('/api/analytics/events', requireAuth, async (request, response) => {
       filter.status = status === 'sent' ? 'success' : status;
     }
     if (search) {
-      filter.$or = [
-        { message_text: { $regex: search, $options: 'i' } },
-        { keyword: { $regex: search, $options: 'i' } }
+      filter.$and = [
+        { $or: [{ owner_user_id: String(request.user.id) }, { owner_user_id: request.user.id }] },
+        { $or: [
+          { message_text: { $regex: search, $options: 'i' } },
+          { keyword: { $regex: search, $options: 'i' } }
+        ] }
       ];
+      delete filter.$or;
     }
 
     const [events, total, sent, failed] = await Promise.all([
@@ -1089,7 +1080,8 @@ app.get('/api/analytics/events', requireAuth, async (request, response) => {
       pages: Math.max(1, Math.ceil(total / limit))
     });
   } catch (err) {
-    return response.status(500).json({ error: err.message });
+    console.error('Analytics events failed:', err.message);
+    return response.status(500).json({ error: 'Unable to load analytics events.' });
   }
 });
 
@@ -1133,13 +1125,14 @@ app.get('/api/instagram/debug-status', requireAuth, async (request, response) =>
         instagramUserId: a.instagram_user_id,
         dmSnippet: (a.dm_message || '').slice(0, 40)
       })),
-      recentWebhookEventsCount: recentWebhooks.length,
-      recentWebhooksReceived: recentWebhooks,
+      recentWebhookEventsCount: 0,
+      recentWebhooksReceived: [],
       recentAutomationRepliesCount: recentEvents.length,
       recentAutomationReplies: recentEvents
     });
   } catch (err) {
-    return response.status(500).json({ error: err.message });
+    console.error('Instagram debug status failed:', err.message);
+    return response.status(500).json({ error: 'Unable to load debug status.' });
   }
 });
 
