@@ -286,6 +286,81 @@ app.get('/api/me', requireAuth, (request, response) => {
   return response.json({ user: { ...request.user, isAdmin } });
 });
 
+// Password reset: opaque, single-use, hashed tokens. Requests always return the same
+// response so account existence cannot be enumerated.
+async function sendPasswordResetEmail(email, resetUrl) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESET_FROM_EMAIL;
+  if (!apiKey || !from) throw new Error('Password reset email delivery is not configured.');
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from,
+      to: [email],
+      subject: 'Reset your Nudge password',
+      html: '<p>Use this secure link to reset your Nudge password. It expires in 30 minutes.</p><p><a href="' + resetUrl + '">Reset password</a></p><p>If you did not request this, ignore this email.</p>'
+    })
+  });
+  if (!r.ok) throw new Error('Password reset email could not be sent.');
+}
+
+app.post('/api/auth/password-reset/request', loginRateLimit, async (request, response) => {
+  const email = typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '';
+  const generic = { message: 'If an account exists for that email, a password reset link has been sent.' };
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return response.status(202).json(generic);
+  try {
+    const user = await db.getUserByEmail(email);
+    if (user) {
+      const rawToken = crypto.randomBytes(32).toString('base64url');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      const resetBase = String(process.env.PUBLIC_APP_URL || request.protocol + '://' + request.get('host')).replace(/\\/$/, '');
+      await db.collections().passwordResetTokens.deleteMany({ user_id: user.id });
+      await db.collections().passwordResetTokens.insertOne({
+        user_id: user.id, token_hash: tokenHash, expires_at: expiresAt, created_at: new Date()
+      });
+      try {
+        await sendPasswordResetEmail(email, resetBase + '/reset-password.html?token=' + encodeURIComponent(rawToken));
+      } catch (mailError) {
+        await db.collections().passwordResetTokens.deleteOne({ token_hash: tokenHash });
+        console.error('Password reset email delivery failed:', mailError.message);
+      }
+    }
+  } catch (error) {
+    console.error('Password reset request failed:', error.message);
+  }
+  return response.status(202).json(generic);
+});
+
+app.post('/api/auth/password-reset/confirm', async (request, response) => {
+  const token = typeof request.body?.token === 'string' ? request.body.token.trim() : '';
+  const password = typeof request.body?.password === 'string' ? request.body.password : '';
+  if (!token || password.length < 6 || password.length > 128) {
+    return response.status(400).json({ error: 'Invalid or expired reset request.' });
+  }
+  try {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const record = await db.collections().passwordResetTokens.findOne({ token_hash: tokenHash });
+    if (!record || new Date(record.expires_at).getTime() <= Date.now()) {
+      return response.status(400).json({ error: 'Invalid or expired reset request.' });
+    }
+    const passwordHash = await bcrypt.hash(password, 12);
+    const updated = await db.collections().users.updateOne({ id: record.user_id }, {
+      $set: { password_hash: passwordHash, updated_at: new Date().toISOString() }
+    });
+    if (!updated.matchedCount) return response.status(400).json({ error: 'Invalid or expired reset request.' });
+    await Promise.all([
+      db.collections().passwordResetTokens.deleteMany({ user_id: record.user_id }),
+      db.collections().sessions.deleteMany({ user_id: record.user_id })
+    ]);
+    return response.json({ success: true, message: 'Password reset successfully. Please log in again.' });
+  } catch (error) {
+    console.error('Password reset confirmation failed:', error.message);
+    return response.status(500).json({ error: 'Password reset could not be completed.' });
+  }
+});
+
 // ==========================================
 // User Settings & Profile
 // ==========================================
