@@ -12,15 +12,8 @@
   const userDropdownMenu = document.getElementById('userDropdownMenu');
   const logoutBtn = document.getElementById('headerLogoutBtn') || document.getElementById('logoutBtn');
 
-  // Authorization helper
-  window.getAuthHeaders = function (extraHeaders = {}) {
-    const token = localStorage.getItem('comment2dm_token') || localStorage.getItem('nudge_token');
-    const headers = { ...extraHeaders };
-    if (token) {
-      headers['Authorization'] = 'Bearer ' + token;
-    }
-    return headers;
-  };
+  // Authentication is cookie-based; never send bearer tokens from localStorage.
+  window.getAuthHeaders = function (extraHeaders = {}) { return { ...extraHeaders }; };
 
   // 1. Sidebar Collapsing Logic
   const savedCollapsed = localStorage.getItem('comment2dm_sidebar_collapsed') === 'true';
