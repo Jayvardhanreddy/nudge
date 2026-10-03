@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const headers = { 'Authorization': `Bearer ${localStorage.getItem('comment2dm_token') || ''}`, 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
 
   // Auth Check
   try {
