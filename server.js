@@ -517,6 +517,15 @@ app.post('/api/automations', requireAuth, async (request, response, next) => {
     const isEnabled = enabled === false || enabled === 0 ? 0 : 1;
     let selectedMediaId = mediaId || null;
     let selectedMediaUrl = mediaUrl || null;
+    if (selectedMediaUrl) {
+      try {
+        const parsed = new URL(String(selectedMediaUrl));
+        if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+        selectedMediaUrl = parsed.toString().slice(0, 2048);
+      } catch {
+        return response.status(400).json({ error: 'Invalid media URL.' });
+      }
+    }
 
     if (!selectedMediaId && mediaUrl && String(mediaUrl).trim() !== '') {
       try {
@@ -598,7 +607,18 @@ app.patch('/api/automations/:id', requireAuth, async (request, response, next) =
     if (mediaId !== undefined) newMediaId = mediaId || null;
 
     let newMediaUrl = existing.media_url || null;
-    if (mediaUrl !== undefined) newMediaUrl = mediaUrl || null;
+    if (mediaUrl !== undefined) {
+      newMediaUrl = mediaUrl || null;
+      if (newMediaUrl) {
+        try {
+          const parsed = new URL(String(newMediaUrl));
+          if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+          newMediaUrl = parsed.toString().slice(0, 2048);
+        } catch {
+          return response.status(400).json({ error: 'Invalid media URL.' });
+        }
+      }
+    }
 
     const now = new Date().toISOString();
     await db.run(
