@@ -1197,7 +1197,6 @@ app.get('/api/instagram/debug-status', requireAuth, async (request, response) =>
       automations.find({
         $or: [{ owner_user_id: String(ownerId) }, { owner_user_id: ownerId }]
       }).toArray(),
-      webhookEvents.find({}).sort({ processed_at: -1 }).limit(10).toArray(),
       automationEvents.find({
         $or: [{ owner_user_id: String(ownerId) }, { owner_user_id: ownerId }]
       }).sort({ created_at: -1 }).limit(15).toArray()
@@ -1240,7 +1239,7 @@ app.get('/api/admin/users', requireAdmin, async (request, response) => {
   try {
     const users = db.collections ? await db.collections().users.find({}, { projection: { password: 0 } }).sort({ created_at: -1 }).limit(500).toArray() : [];
     return response.json({ users });
-  } catch (err) { return response.status(500).json({ error: err.message }); }
+  } catch (err) { console.error('Admin request failed:', err.message); return response.status(500).json({ error: 'Admin request failed.' }); }
 });
 
 app.patch('/api/admin/users/:id/plan', requireAdmin, async (request, response) => {
@@ -1250,7 +1249,7 @@ app.patch('/api/admin/users/:id/plan', requireAdmin, async (request, response) =
     const { ObjectId } = require('mongodb');
     await db.collections().users.updateOne({ _id: new ObjectId(request.params.id) }, { $set: { plan, updated_at: new Date() } });
     return response.json({ success: true });
-  } catch (err) { return response.status(500).json({ error: err.message }); }
+  } catch (err) { console.error('Admin request failed:', err.message); return response.status(500).json({ error: 'Admin request failed.' }); }
 });
 
 app.patch('/api/admin/users/:id/suspend', requireAdmin, async (request, response) => {
