@@ -487,7 +487,7 @@ app.post('/api/automations', requireAuth, async (request, response, next) => {
     const trimmedMessage = typeof dmMessage === 'string' ? dmMessage.trim() : '';
     const trimmedReply = typeof replyTemplate === 'string' ? replyTemplate.trim() : '';
     const trigger = triggerType === 'all' ? 'all' : 'keyword';
-    const targetIgId = typeof instagramUserId === 'string' ? instagramUserId.trim() : '';
+    let targetIgId = typeof instagramUserId === 'string' ? instagramUserId.trim() : '';
 
     if (!targetIgId) {
       return response.status(400).json({ error: 'Please select a connected Instagram account.' });
@@ -495,8 +495,11 @@ app.post('/api/automations', requireAuth, async (request, response, next) => {
     if (trigger === 'keyword' && !trimmedKeyword) {
       return response.status(400).json({ error: 'Trigger keyword must not be empty.' });
     }
-    if (!trimmedMessage) {
-      return response.status(400).json({ error: 'Private DM message must not be empty.' });
+    if (!trimmedMessage || trimmedMessage.length > 2000) {
+      return response.status(400).json({ error: 'Private DM message must be between 1 and 2000 characters.' });
+    }
+    if (trimmedKeyword.length > 200 || trimmedReply.length > 2000) {
+      return response.status(400).json({ error: 'Automation input is too long.' });
     }
 
     let account = null;
@@ -505,13 +508,6 @@ app.post('/api/automations', requireAuth, async (request, response, next) => {
         'SELECT owner_user_id, username FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
         [request.user.id, targetIgId]
       );
-    }
-    if (!account) {
-      const userAccounts = await instagramService.listAccounts(request.user.id);
-      if (userAccounts && userAccounts.length > 0) {
-        account = userAccounts.find(a => a.id === targetIgId) || userAccounts[0];
-        targetIgId = account.id;
-      }
     }
     if (!account) {
       return response.status(403).json({ error: 'No connected Instagram account found. Please connect your Instagram account first.' });
@@ -573,16 +569,24 @@ app.patch('/api/automations/:id', requireAuth, async (request, response, next) =
     let targetIgId = existing.instagram_user_id;
     if (typeof instagramUserId === 'string' && instagramUserId.trim() !== '') {
       targetIgId = instagramUserId.trim();
+      const ownedTarget = await db.get(
+        'SELECT owner_user_id, username FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?',
+        [request.user.id, targetIgId]
+      );
+      if (!ownedTarget) return response.status(403).json({ error: 'That Instagram account is not connected to your account.' });
     }
 
     let newKeyword = existing.keyword;
     if (keyword !== undefined) newKeyword = String(keyword).trim();
+    if (newKeyword.length > 200) return response.status(400).json({ error: 'Keyword is too long.' });
 
     let newMessage = existing.dm_message;
     if (dmMessage !== undefined) newMessage = String(dmMessage).trim();
+    if (!newMessage || newMessage.length > 2000) return response.status(400).json({ error: 'Private DM message is invalid.' });
 
     let newReply = existing.reply_template;
     if (replyTemplate !== undefined) newReply = String(replyTemplate).trim();
+    if (newReply.length > 2000) return response.status(400).json({ error: 'Public reply is too long.' });
 
     let newTrigger = existing.trigger_type || 'keyword';
     if (triggerType !== undefined) newTrigger = triggerType === 'all' ? 'all' : 'keyword';
