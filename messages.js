@@ -1,5 +1,6 @@
 // messages.js — Comment2DM DM Activity Log
 (function () {
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   'use strict';
   let page = 1;
   let totalPages = 1;
@@ -88,12 +89,12 @@
         <td style="padding-left:20px;">
           <div class="handle-cell">
             <div class="avatar-circle">${initials(handle)}</div>
-            <span style="font-weight:500;">@${handle}</span>
+            <span style="font-weight:500;">@${escapeHtml(handle)}</span>
           </div>
         </td>
-        <td><span class="preview-text" title="${ev.commentText || ''}">${trunc(ev.commentText, 55)}</span></td>
-        <td><span class="preview-text" title="${ev.dmText || ''}">${trunc(ev.dmText, 55)}</span></td>
-        <td>${ev.automationName ? `<span class="automation-pill">⚡ ${trunc(ev.automationName, 24)}</span>` : '–'}</td>
+        <td><span class="preview-text" title="${escapeHtml(ev.commentText || '')}">${escapeHtml(trunc(ev.commentText, 55))}</span></td>
+        <td><span class="preview-text" title="${escapeHtml(ev.dmText || '')}">${escapeHtml(trunc(ev.dmText, 55))}</span></td>
+        <td>${ev.automationName ? `<span class="automation-pill">⚡ ${escapeHtml(trunc(ev.automationName, 24))}</span>` : '–'}</td>
         <td>
           <div class="status-cell">
             <span class="status-dot ${statusClass}"></span>
