@@ -1188,9 +1188,9 @@ app.get('/api/analytics/events', requireAuth, async (request, response) => {
 app.get('/api/instagram/debug-status', requireAuth, async (request, response) => {
   try {
     const ownerId = request.user.id;
-    const { automations, instagramAccounts, webhookEvents, automationEvents } = db.collections();
+    const { automations, instagramAccounts, automationEvents } = db.collections();
 
-    const [accounts, userAutomations, recentWebhooks, recentEvents] = await Promise.all([
+    const [accounts, userAutomations, recentEvents] = await Promise.all([
       instagramAccounts.find({
         $or: [{ owner_user_id: String(ownerId) }, { owner_user_id: ownerId }]
       }).toArray(),
