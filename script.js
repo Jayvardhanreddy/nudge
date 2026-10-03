@@ -4,14 +4,10 @@
 // ============================================================
 
 (function () {
-  // Helper: get authorization headers including fallback localStorage token
-  window.getAuthHeaders = function (extraHeaders = {}) {
-    const token = localStorage.getItem('comment2dm_token') || localStorage.getItem('nudge_token');
-    const headers = { ...extraHeaders };
-    if (token) {
-      headers['Authorization'] = 'Bearer ' + token;
-    }
-    return headers;
+  // Authentication is cookie-based; credentials are never exposed to JavaScript/localStorage.
+  window.getAuthHeaders = function (extraHeaders = {}) { return { ...extraHeaders }; };
+  window.authFetch = function (url, options = {}) {
+    return fetch(url, { ...options, credentials: 'same-origin', headers: { ...window.getAuthHeaders(), ...(options.headers || {}) } });
   };
 
   // Helper: check session and redirect if already authenticated
@@ -47,6 +43,7 @@
             !window.location.pathname.endsWith('contact.html') &&
             !window.location.pathname.endsWith('404.html')) {
           localStorage.removeItem('comment2dm_token');
+          localStorage.removeItem('nudge_token');
           window.location.replace('login.html?tab=login');
         }
       }
@@ -153,10 +150,8 @@
           return;
         }
 
-        if (data.sessionToken) {
-          localStorage.setItem('comment2dm_token', data.sessionToken);
-        }
-
+        localStorage.removeItem('comment2dm_token');
+        localStorage.removeItem('nudge_token');
         window.location.replace('dashboard.html');
       } catch (err) {
         showAuthError('Unable to sign in right now. Please try again.');
