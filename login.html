@@ -97,7 +97,7 @@
         <div class="form-group">
           <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
             <label class="form-label" for="loginPassword" style="margin-bottom:0;">Password</label>
-            <a href="mailto:nudge.support360@gmail.com?subject=Comment2DM%20Password%20Reset" style="font-size:0.8rem; color:var(--accent-light);">Forgot password?</a>
+            <a href="javascript:void(0)" id="forgotPasswordLink" style="font-size:0.8rem; color:var(--accent-light);">Forgot password?</a>
           </div>
           <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" autocomplete="current-password" required />
         </div>
@@ -188,6 +188,18 @@
 
 </div>
 
+
+<script>
+document.getElementById('forgotPasswordLink')?.addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail')?.value.trim() || prompt('Enter your account email:');
+  if (!email) return;
+  try {
+    const r = await fetch('/api/auth/password-reset/request', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({email}) });
+    const d = await r.json().catch(()=>({message:'If an account exists for that email, a password reset link has been sent.'}));
+    const box=document.getElementById('formError'); if(box){box.textContent=d.message||'If an account exists for that email, a password reset link has been sent.';box.classList.add('show');}
+  } catch {}
+});
+</script>
 <script src="script.js"></script>
 </body>
 </html>
