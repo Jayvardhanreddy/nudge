@@ -308,14 +308,14 @@ async function sendPasswordResetEmail(email, resetUrl) {
 app.post('/api/auth/password-reset/request', loginRateLimit, async (request, response) => {
   const email = typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '';
   const generic = { message: 'If an account exists for that email, a password reset link has been sent.' };
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return response.status(202).json(generic);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return response.status(202).json(generic);
   try {
     const user = await db.getUserByEmail(email);
     if (user) {
       const rawToken = crypto.randomBytes(32).toString('base64url');
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-      const resetBase = String(process.env.PUBLIC_APP_URL || request.protocol + '://' + request.get('host')).replace(/\\/$/, '');
+      const resetBase = String(process.env.PUBLIC_APP_URL || request.protocol + '://' + request.get('host')).replace(/\/$/, '');
       await db.collections().passwordResetTokens.deleteMany({ user_id: user.id });
       await db.collections().passwordResetTokens.insertOne({
         user_id: user.id, token_hash: tokenHash, expires_at: expiresAt, created_at: new Date()
