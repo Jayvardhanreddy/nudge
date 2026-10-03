@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const headers = { 'Content-Type': 'application/json' };
 
   // Auth Check
@@ -40,8 +41,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         tb.innerHTML = usersRes.users.map(u => `
           <tr>
             <td>
-              <strong>${u.name || 'Unknown'}</strong><br>
-              <span style="font-size:0.8rem; color:var(--ink-secondary);">${u.email}</span>
+              <strong>${escapeHtml(u.name || 'Unknown')}</strong><br>
+              <span style="font-size:0.8rem; color:var(--ink-secondary);">${escapeHtml(u.email)}</span>
             </td>
             <td>${new Date(u.created_at).toLocaleDateString()}</td>
             <td>
@@ -78,8 +79,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('couponsTableBody').innerHTML = configRes.coupons.length === 0 ? '<tr><td colspan="3">No active coupons</td></tr>' : 
           configRes.coupons.map(c => `
             <tr>
-              <td><strong>${c.code}</strong></td>
-              <td>${c.discount}% Off</td>
+              <td><strong>${escapeHtml(c.code)}</strong></td>
+              <td>${escapeHtml(c.discount)}% Off</td>
               <td><button onclick="deleteCoupon('${c.code}')" class="btn btn-ghost btn-sm" style="color:#f43f5e;">Remove</button></td>
             </tr>
           `).join('');
@@ -90,9 +91,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('supportTableBody').innerHTML = supportRes.contacts.map(c => `
           <tr style="${c.resolved ? 'opacity: 0.5;' : ''}">
             <td>${new Date(c.created_at).toLocaleDateString()}</td>
-            <td>${c.name}<br><small>${c.email}</small></td>
-            <td>${c.subject}</td>
-            <td>${c.message}</td>
+            <td>${escapeHtml(c.name)}<br><small>${escapeHtml(c.email)}</small></td>
+            <td>${escapeHtml(c.subject)}</td>
+            <td>${escapeHtml(c.message)}</td>
             <td>
               ${c.resolved ? 'Resolved' : `<button onclick="resolveContact('${c._id}')" class="btn btn-primary btn-sm">Mark Resolved</button>`}
             </td>
