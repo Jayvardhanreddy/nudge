@@ -1,5 +1,6 @@
 // analytics.js — Comment2DM Analytics Page
 (function () {
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   'use strict';
   let currentDays = 7;
   let refreshTimer = null;
@@ -136,8 +137,8 @@
       </div>`;
       return `<tr>
         <td style="color:rgba(255,255,255,0.35);font-size:0.8rem;">${i + 1}</td>
-        <td><span style="font-weight:500;">⚡ ${a.name || 'Automation ' + (i + 1)}</span></td>
-        <td style="color:rgba(255,255,255,0.5);">@${a.account || '–'}</td>
+        <td><span style="font-weight:500;">⚡ ${escapeHtml(a.name || 'Automation ' + (i + 1))}</span></td>
+        <td style="color:rgba(255,255,255,0.5);">@${escapeHtml(a.account || '–')}</td>
         <td style="font-weight:600;">${fmt(a.sent || 0)}</td>
         <td style="min-width:120px;">${bar}</td>
         <td>${badge}</td>
