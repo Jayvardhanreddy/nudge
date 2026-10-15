@@ -775,8 +775,8 @@ function keywordMatches(commentText, keyword, triggerType) {
 }
 
 app.post('/api/instagram/webhook', async (request, response) => {
-  response.status(200).json({ status: 'ok' });
-
+  let currentCommentId = null;
+  let processingFailed = false;
   try {
     if (request.billingBlocked) return;
     const payload = request.body;
@@ -794,6 +794,7 @@ app.post('/api/instagram/webhook', async (request, response) => {
 
         const commentVal = change.value;
         const commentId = String(commentVal.id || '');
+        currentCommentId = commentId;
         const commentText = String(commentVal.text || '');
 
         if (!commentId || !commentText || !recipientIgUserId) continue;
@@ -827,7 +828,14 @@ app.post('/api/instagram/webhook', async (request, response) => {
 
         const commentMediaId = String(commentVal.media?.id || commentVal.media_id || commentVal.mediaId || '');
 
+        let commentHadFailure = false;
         for (const auto of activeAutomations) {
+          // Successful automation runs are idempotent across Meta webhook retries.
+          const priorSuccess = db.collections
+            ? await db.collections().automationEvents.findOne({ automation_id: String(auto.id), comment_id: commentId, status: 'success' })
+            : await db.get('SELECT id FROM automation_events WHERE automation_id = ? AND comment_id = ? AND status = ?', [auto.id, commentId, 'success']);
+          if (priorSuccess) continue;
+
           // If automation is specific to one reel, check media ID
           if (auto.media_id && commentMediaId) {
             const autoMediaIdStr = String(auto.media_id);
@@ -869,13 +877,24 @@ app.post('/api/instagram/webhook', async (request, response) => {
                 [auto.owner_user_id, recipientIgUserId, auto.id, commentId, 'private_reply', auto.keyword, auto.dm_message, 'failed', apiErr.message, new Date().toISOString()]
               );
               console.error(`Failed to execute automation for comment ${commentId}:`, apiErr.message);
+              commentHadFailure = true;
             }
           }
         }
+        if (commentHadFailure) {
+          processingFailed = true;
+          if (db.collections) await db.collections().webhookEvents.deleteOne({ event_id: commentId });
+          else await db.run('DELETE FROM webhook_events WHERE event_id = ?', [commentId]);
+        }
       }
     }
+    return response.status(processingFailed ? 500 : 200).json({ status: processingFailed ? 'retry' : 'ok' });
   } catch (err) {
     console.error('Error in Instagram webhook processing:', err.message);
+    if (currentCommentId && db.collections) {
+      try { await db.collections().webhookEvents.deleteOne({ event_id: currentCommentId }); } catch (_) {}
+    }
+    if (!response.headersSent) return response.status(500).json({ status: 'error' });
   }
 });
 
