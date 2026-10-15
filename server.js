@@ -778,11 +778,11 @@ app.post('/api/instagram/webhook', async (request, response) => {
   let currentCommentId = null;
   let processingFailed = false;
   try {
-    if (request.billingBlocked) return;
+    if (request.billingBlocked) return response.status(200).json({ status: 'blocked' });
     const payload = request.body;
     console.log('Incoming Meta Webhook received.');
     if (!payload || payload.object !== 'instagram' || !Array.isArray(payload.entry)) {
-      return;
+      return response.status(200).json({ status: 'ignored' });
     }
 
     for (const entry of payload.entry) {
