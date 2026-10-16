@@ -253,11 +253,10 @@ async function disconnect(userId, instagramUserId) {
     const { instagramAccounts } = db.collections();
     const ids = [String(instagramUserId)];
     if (!isNaN(Number(instagramUserId))) ids.push(Number(instagramUserId));
+    // Never disconnect another user's copy of an Instagram account.
     await instagramAccounts.deleteMany({
-      $or: [
-        { instagram_user_id: { $in: ids }, owner_user_id: String(userId) },
-        { instagram_user_id: { $in: ids } }
-      ]
+      instagram_user_id: { $in: ids },
+      owner_user_id: String(userId)
     });
   } else {
     await db.run('DELETE FROM instagram_accounts WHERE owner_user_id = ? AND instagram_user_id = ?', [userId, instagramUserId]);
@@ -313,18 +312,11 @@ async function getDecryptedTokenByInstagramUserId(instagramUserId, ownerUserId) 
     const ids = [String(instagramUserId)];
     if (!isNaN(Number(instagramUserId))) ids.push(Number(instagramUserId));
 
-    account = await instagramAccounts.findOne(
-      { instagram_user_id: { $in: ids } },
-      { sort: { expires_at: -1 } }
-    );
-
-    // Fallback: If not found by ID alone, find any active account for this owner
-    if (!account && ownerUserId) {
-      account = await instagramAccounts.findOne(
-        { owner_user_id: String(ownerUserId) },
-        { sort: { expires_at: -1 } }
-      );
-    }
+    // Webhook automation always supplies the owner. Keep the lookup scoped to
+    // that owner; falling back to another account could send from the wrong user.
+    const filter = { instagram_user_id: { $in: ids } };
+    if (ownerUserId) filter.owner_user_id = String(ownerUserId);
+    account = await instagramAccounts.findOne(filter, { sort: { expires_at: -1 } });
   }
   if (!account) {
     const error = new Error(`Connected Instagram account ${instagramUserId} not found.`);
