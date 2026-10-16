@@ -806,10 +806,16 @@ app.post('/api/instagram/webhook', async (request, response) => {
           continue;
         }
 
-        await db.run('INSERT OR IGNORE INTO webhook_events (event_id, processed_at) VALUES (?, ?)', [
+        const claim = await db.run('INSERT OR IGNORE INTO webhook_events (event_id, processed_at) VALUES (?, ?)', [
           commentId,
           new Date().toISOString()
         ]);
+        // Claim atomically before sending. Concurrent webhook deliveries must not
+        // both process the same comment and send duplicate DMs.
+        if (claim && claim.changes === 0) {
+          console.log(`Skipping concurrently claimed comment event ${commentId}`);
+          continue;
+        }
 
         const automations = await db.all(
           'SELECT * FROM automations WHERE instagram_user_id = ? AND enabled = 1',
