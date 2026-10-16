@@ -45,14 +45,21 @@ function metaErrorMessage(data, fallback) {
 async function exchangeCode(code) {
   ensureConfiguration();
 
-  const form = new FormData();
-  form.set('client_id', process.env.META_APP_ID);
-  form.set('client_secret', process.env.META_APP_SECRET);
-  form.set('grant_type', 'authorization_code');
-  form.set('redirect_uri', process.env.META_REDIRECT_URI);
-  form.set('code', code);
+  // Instagram Login's token endpoint expects application/x-www-form-urlencoded,
+  // not multipart/form-data. FormData can make valid OAuth codes fail with HTTP 400.
+  const form = new URLSearchParams({
+    client_id: process.env.META_APP_ID,
+    client_secret: process.env.META_APP_SECRET,
+    grant_type: 'authorization_code',
+    redirect_uri: process.env.META_REDIRECT_URI,
+    code
+  });
 
-  const response = await fetch('https://api.instagram.com/oauth/access_token', { method: 'POST', body: form });
+  const response = await fetch('https://api.instagram.com/oauth/access_token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form.toString()
+  });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok || !data.access_token) {
@@ -84,7 +91,9 @@ async function exchangeCode(code) {
 
 async function fetchProfile(accessToken) {
   const profileUrl = new URL(`https://graph.instagram.com/${apiVersion}/me`);
-  profileUrl.searchParams.set('fields', 'user_id,username,name,profile_picture_url,followers_count');
+  // Instagram Login exposes a smaller field set than Facebook Login. Requesting
+  // Facebook-Graph-only fields here can reject the entire OAuth callback.
+  profileUrl.searchParams.set('fields', 'user_id,username,account_type,media_count');
   profileUrl.searchParams.set('access_token', accessToken);
 
   const response = await fetch(profileUrl);
