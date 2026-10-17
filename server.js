@@ -449,7 +449,14 @@ app.post('/api/settings/password', requireAuth, async (request, response, next) 
 
 app.delete('/api/account/delete', requireAuth, async (request, response, next) => {
   try {
-    await billing.cancelSubscriptionsForUser(request.user.id);
+    try {
+      await billing.cancelSubscriptionsForUser(request.user.id);
+    } catch (billingError) {
+      console.error('[account/delete] subscription cancellation failed:', billingError instanceof Error ? billingError.message : 'unknown_error');
+      return response.status(503).json({
+        error: 'We could not confirm cancellation of your active subscription. Your account has not been deleted. Please retry or contact support.'
+      });
+    }
     await db.deleteUserAccount(request.user.id);
     response.clearCookie('comment2dm_session', { path: '/' });
     response.clearCookie('nudge_session', { path: '/' });
