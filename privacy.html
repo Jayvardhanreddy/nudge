@@ -22,10 +22,10 @@
   <p>We collect the following categories of data:</p>
   <ul>
     <li><strong>Account Information:</strong> Name, email address, phone number (optional), and password (hashed with bcrypt)</li>
-    <li><strong>Instagram Data:</strong> Instagram account username, profile picture, follower count, and long-lived access tokens (encrypted with AES-256-GCM). Comment data and DM recipient information needed to process automations</li>
+    <li><strong>Instagram Data:</strong> Instagram account identifier and username, plus long-lived access tokens (encrypted with AES-256-GCM). Comment data and DM recipient information needed to process automations</li>
     <li><strong>Automation Events:</strong> Comments received, DMs sent, automation success/failure status, and timestamps</li>
     <li><strong>Billing Data:</strong> Payment records processed through Razorpay. We do not store card numbers — only Razorpay order IDs and payment IDs</li>
-    <li><strong>Usage Data:</strong> Pages visited, features used, and general usage patterns for improving the service</li>
+    <li><strong>Operational Logs:</strong> Request method, response status, response timing and security events needed to operate and protect the service. Logs should not contain access tokens, passwords or unnecessary personal data.</li>
   </ul>
 
   <h2>2. How We Use Your Data</h2>
@@ -42,8 +42,8 @@
   <ul>
     <li>Automation events (DM logs): retained for <strong>30 days</strong>, then automatically deleted via TTL indexes</li>
     <li>Webhook events (duplicate check cache): retained for <strong>7 days</strong></li>
-    <li>Account data: retained until you delete your account</li>
-    <li>Payment records: retained for <strong>7 years</strong> as required by tax law</li>
+    <li>Account data: retained until account deletion, except records that must be retained for applicable legal, security, fraud-prevention or dispute obligations</li>
+    <li>Payment records: retained only for the documented period needed for applicable accounting, tax, fraud-prevention and dispute obligations; the operator must confirm the exact period under applicable law</li>
   </ul>
 
   <h2>4. Third-Party Services</h2>
