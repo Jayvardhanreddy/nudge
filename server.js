@@ -452,6 +452,7 @@ app.delete('/api/account/delete', requireAuth, async (request, response, next) =
     await db.deleteUserAccount(request.user.id);
     response.clearCookie('comment2dm_session', { path: '/' });
     response.clearCookie('nudge_session', { path: '/' });
+    response.clearCookie('nudge_token', { path: '/' });
     return response.json({ success: true, message: 'Account deleted successfully.' });
   } catch (error) {
     return next(error);
