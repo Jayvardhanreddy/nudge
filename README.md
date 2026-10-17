@@ -14,14 +14,15 @@ Nudge uses Meta's official **Instagram API with Instagram Login (Business Login 
 
    ```text
    PORT=3000
-   JWT_SECRET=your-existing-long-random-jwt-secret
+   JWT_SECRET=<generate-a-random-secret-of-at-least-32-characters>
    NODE_ENV=development
-   ADMIN_EMAIL=the-email-of-the-one-admin-account
+   ADMIN_EMAIL=<the-email-of-the-one-admin-account>
    META_APP_ID=the-app-id-from-meta
    META_APP_SECRET=the-app-secret-from-meta
    META_REDIRECT_URI=http://localhost:3000/api/instagram/callback
    META_API_VERSION=v25.0
-   META_TOKEN_ENCRYPTION_KEY=64-character-hex-key
+   META_TOKEN_ENCRYPTION_KEY=<64-character-hex-key>
+   META_WEBHOOK_VERIFY_TOKEN=<random-webhook-verification-token>
    ```
 
    Generate the encryption key with:
@@ -36,7 +37,7 @@ The application requests only `instagram_business_basic`, which is enough to rea
 
 ## Database and admin access
 
-The application uses SQLite at `data/nudge.sqlite`. On first startup it imports existing records from `data/users.json` and `data/instagram-accounts.json`; subsequent changes are written only to SQLite. The database file is ignored by Git and should be backed up securely.
+The application uses MongoDB Atlas via `MONGODB_URI` and `MONGODB_DB_NAME`. On first startup it imports legacy records from `data/users.json` and `data/instagram-accounts.json` where applicable. Keep the database URI and all credentials in the hosting provider secret store; never commit `.env` files. Restrict Atlas network access and database permissions, and back up data securely.
 
 Set `ADMIN_EMAIL` in `.env` to the exact email of the one administrator account. That authenticated account can open `http://localhost:3000/admin.html` and call the admin overview API. Other authenticated users receive HTTP 403. Admin responses contain user and Instagram account metadata only; password hashes, JWT secrets, Meta secrets, and encrypted access tokens are never exposed.
 
