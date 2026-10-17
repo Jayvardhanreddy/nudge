@@ -53,7 +53,7 @@ app.use((request, response, next) => {
   next();
 });
 
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'jayvardhanreddy2008@gmail.com').trim().toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 
 async function loginRateLimit(request, response, next) {
   try {
@@ -175,6 +175,7 @@ async function requireAuth(request, response, next) {
 }
 
 function requireAdmin(request, response, next) {
+  if (!ADMIN_EMAIL) return response.status(503).json({ error: 'Admin access is not configured on the server.' });
   if (request.user.email.toLowerCase() !== ADMIN_EMAIL) {
     return response.status(403).json({ error: 'Admin access required.' });
   }
@@ -448,9 +449,18 @@ app.post('/api/settings/password', requireAuth, async (request, response, next) 
 
 app.delete('/api/account/delete', requireAuth, async (request, response, next) => {
   try {
+    try {
+      await billing.cancelSubscriptionsForUser(request.user.id);
+    } catch (billingError) {
+      console.error('[account/delete] subscription cancellation failed:', billingError instanceof Error ? billingError.message : 'unknown_error');
+      return response.status(503).json({
+        error: 'We could not confirm cancellation of your active subscription. Your account has not been deleted. Please retry or contact support.'
+      });
+    }
     await db.deleteUserAccount(request.user.id);
     response.clearCookie('comment2dm_session', { path: '/' });
     response.clearCookie('nudge_session', { path: '/' });
+    response.clearCookie('nudge_token', { path: '/' });
     return response.json({ success: true, message: 'Account deleted successfully.' });
   } catch (error) {
     return next(error);
@@ -1136,13 +1146,28 @@ app.post('/api/creator/generate', requireAuth, async (request, response) => {
 // ── Contact form ────────────────────────────────────────────────────────────
 app.post('/api/contact', async (request, response) => {
   const { name, email, subject, message } = request.body || {};
-  if (!name || !email || !message) return response.status(400).json({ error: 'name, email and message are required' });
+  if (typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string' ||
+      name.trim().length < 2 || name.length > 100 || email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
+      message.trim().length < 5 || message.length > 2000) {
+    return response.status(400).json({ error: 'Enter a valid name, email and message (maximum 2,000 characters).' });
+  }
   try {
-    if (db.collections && db.collections.contacts) {
-      await db.collections.contacts.insertOne({ name: String(name).slice(0, 100), email: String(email).slice(0, 254), subject: String(subject || 'General').slice(0, 100), message: String(message).slice(0, 2000), created_at: new Date(), resolved: false });
-    }
-    return response.json({ success: true });
-  } catch { return response.json({ success: true }); }
+    const contacts = db.collections ? db.collections().contacts : null;
+    if (!contacts) return response.status(503).json({ error: 'Support requests are temporarily unavailable. Please try again later.' });
+    await contacts.insertOne({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      subject: typeof subject === 'string' ? subject.trim().slice(0, 100) : 'General',
+      message: message.trim(),
+      created_at: new Date(),
+      resolved: false
+    });
+    return response.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Contact request could not be stored:', error.message);
+    return response.status(503).json({ error: 'Support request could not be saved. Please retry later.' });
+  }
 });
 
 // ── Analytics Events for DM Log ─────────────────────────────────────────────

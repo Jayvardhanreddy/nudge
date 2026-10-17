@@ -396,6 +396,29 @@ async function verify(req, res) {
   return res.json({ verified: true, plan: s.plan });
 }
 
+async function cancelSubscriptionsForUser(userId) {
+  const d = await store();
+  const active = await d.collection('subscriptions').find({
+    user_id: String(userId),
+    status: { $in: ['created', 'authenticated', 'active', 'pending'] }
+  }).toArray();
+  if (!active.length) return { cancelled: 0 };
+
+  const r = await razor();
+  for (const subscription of active) {
+    if (subscription.razorpay_subscription_id) {
+      if (!r) throw new Error('Razorpay is not configured; cannot safely delete an account with an active subscription.');
+      // Fail closed: do not delete the account if the payment provider refuses cancellation.
+      await r.subscriptions.cancel(subscription.razorpay_subscription_id, false);
+    }
+    await d.collection('subscriptions').updateOne(
+      { _id: subscription._id },
+      { $set: { status: 'cancelled', updated_at: new Date().toISOString(), cancellation_reason: 'account_deletion' } }
+    );
+  }
+  return { cancelled: active.length };
+}
+
 async function cancel(req, res) {
   const u = await auth(req);
   if (!u) return res.status(401).json({ error: 'Authentication required.' });
@@ -562,5 +585,6 @@ module.exports = {
   entitlement,
   counts,
   PLANS,
-  LIMITS
+  LIMITS,
+  cancelSubscriptionsForUser
 };
