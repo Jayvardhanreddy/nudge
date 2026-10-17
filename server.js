@@ -1139,7 +1139,7 @@ app.post('/api/contact', async (request, response) => {
   const { name, email, subject, message } = request.body || {};
   if (typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string' ||
       name.trim().length < 2 || name.length > 100 || email.length > 254 ||
-      !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
       message.trim().length < 5 || message.length > 2000) {
     return response.status(400).json({ error: 'Enter a valid name, email and message (maximum 2,000 characters).' });
   }
