@@ -1137,13 +1137,28 @@ app.post('/api/creator/generate', requireAuth, async (request, response) => {
 // ── Contact form ────────────────────────────────────────────────────────────
 app.post('/api/contact', async (request, response) => {
   const { name, email, subject, message } = request.body || {};
-  if (!name || !email || !message) return response.status(400).json({ error: 'name, email and message are required' });
+  if (typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string' ||
+      name.trim().length < 2 || name.length > 100 || email.length > 254 ||
+      !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()) ||
+      message.trim().length < 5 || message.length > 2000) {
+    return response.status(400).json({ error: 'Enter a valid name, email and message (maximum 2,000 characters).' });
+  }
   try {
-    if (db.collections && db.collections.contacts) {
-      await db.collections.contacts.insertOne({ name: String(name).slice(0, 100), email: String(email).slice(0, 254), subject: String(subject || 'General').slice(0, 100), message: String(message).slice(0, 2000), created_at: new Date(), resolved: false });
-    }
-    return response.json({ success: true });
-  } catch { return response.json({ success: true }); }
+    const contacts = db.collections ? db.collections().contacts : null;
+    if (!contacts) return response.status(503).json({ error: 'Support requests are temporarily unavailable. Please try again later.' });
+    await contacts.insertOne({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      subject: typeof subject === 'string' ? subject.trim().slice(0, 100) : 'General',
+      message: message.trim(),
+      created_at: new Date(),
+      resolved: false
+    });
+    return response.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Contact request could not be stored:', error.message);
+    return response.status(503).json({ error: 'Support request could not be saved. Please retry later.' });
+  }
 });
 
 // ── Analytics Events for DM Log ─────────────────────────────────────────────
