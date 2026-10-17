@@ -449,6 +449,7 @@ app.post('/api/settings/password', requireAuth, async (request, response, next) 
 
 app.delete('/api/account/delete', requireAuth, async (request, response, next) => {
   try {
+    await billing.cancelSubscriptionsForUser(request.user.id);
     await db.deleteUserAccount(request.user.id);
     response.clearCookie('comment2dm_session', { path: '/' });
     response.clearCookie('nudge_session', { path: '/' });
