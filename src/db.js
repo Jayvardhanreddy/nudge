@@ -583,14 +583,19 @@ async function updateUserProfile(userId, { name, email, phone, avatarUrl }) {
 }
 
 async function deleteUserAccount(userId) {
-  const { users, instagramAccounts, automations, automationEvents, sessions } = collections();
-  await Promise.allSettled([
-    users.deleteOne({ id: userId }),
+  const { users, instagramAccounts, automations, automationEvents, sessions, passwordResetTokens, aiUsage } = collections();
+  // Remove user-owned credentials and records first; only remove the account after
+  // dependent cleanup succeeds so the endpoint cannot report false success.
+  await Promise.all([
     instagramAccounts.deleteMany({ owner_user_id: userId }),
     automations.deleteMany({ owner_user_id: userId }),
     automationEvents.deleteMany({ owner_user_id: userId }),
-    sessions.deleteMany({ user_id: userId })
+    sessions.deleteMany({ user_id: userId }),
+    passwordResetTokens.deleteMany({ user_id: userId }),
+    aiUsage.deleteMany({ user_id: userId })
   ]);
+  const result = await users.deleteOne({ id: userId });
+  if (!result.deletedCount) throw new Error("Account was not found or has already been deleted.");
   return true;
 }
 
