@@ -53,7 +53,7 @@ app.use((request, response, next) => {
   next();
 });
 
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'jayvardhanreddy2008@gmail.com').trim().toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 
 async function loginRateLimit(request, response, next) {
   try {
@@ -175,6 +175,7 @@ async function requireAuth(request, response, next) {
 }
 
 function requireAdmin(request, response, next) {
+  if (!ADMIN_EMAIL) return response.status(503).json({ error: 'Admin access is not configured on the server.' });
   if (request.user.email.toLowerCase() !== ADMIN_EMAIL) {
     return response.status(403).json({ error: 'Admin access required.' });
   }
