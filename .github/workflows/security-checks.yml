@@ -22,3 +22,20 @@ jobs:
           node --check src/billing.js
           node --check help.js
           node --check settings.js
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan tracked text for common credential patterns
+        shell: bash
+        run: |
+          set -euo pipefail
+          pattern='(mongodb\+srv://[^[:space:]]+:[^[:space:]]+@|BEGIN (RSA|EC|OPENSSH) PRIVATE KEY|AIza[0-9A-Za-z_-]{20,}|sk-[A-Za-z0-9_-]{20,})'
+          if git grep -I -nE "$pattern" -- . ':!package-lock.json' ':!.github/workflows/security-checks.yml'; then
+            echo "Potential credential pattern found in tracked source."
+            exit 1
+          else
+            result=$?
+            if [ "$result" -ne 1 ]; then exit "$result"; fi
+          fi
