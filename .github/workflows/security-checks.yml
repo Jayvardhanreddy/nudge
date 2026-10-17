@@ -1,0 +1,24 @@
+name: Security checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  node-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check server and backend JavaScript syntax
+        run: |
+          node --check server.js
+          node --check src/db.js
+          node --check src/auth/authService.js
+          node --check src/instagram/instagramService.js
+          node --check src/billing.js
+          node --check help.js
+          node --check settings.js
